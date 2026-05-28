@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Base64 图片解码</title>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 40px 16px;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+      background: #f5f5f5;
+      color: #222;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 28px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+      text-align: center;
+    }
+
+    h1 {
+      margin-top: 0;
+      margin-bottom: 24px;
+      font-size: 26px;
+    }
+
+    input[type="file"] {
+      display: block;
+      margin: 0 auto 20px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: #fafafa;
+      width: 100%;
+      max-width: 420px;
+      box-sizing: border-box;
+    }
+
+    .message {
+      margin: 16px 0;
+      color: #666;
+      font-size: 14px;
+      min-height: 20px;
+    }
+
+    .download-btn {
+      display: none;
+      margin: 16px auto;
+      padding: 10px 18px;
+      background: #2563eb;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 15px;
+      width: fit-content;
+    }
+
+    .download-btn:hover {
+      background: #1d4ed8;
+    }
+
+    img {
+      display: none;
+      max-width: 100%;
+      margin-top: 16px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+
+    .tip {
+      margin-top: 24px;
+      color: #777;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Base64 图片解码</h1>
+
+    <input id="fileInput" type="file" accept=".txt,.base64,.b64,text/plain" />
+
+    <div id="message" class="message">
+      请选择一个包含 Base64 图片内容的文件
+    </div>
+
+    <a id="downloadBtn" class="download-btn" href="#" download="decoded-image.png">
+      下载图片
+    </a>
+
+    <img id="previewImage" alt="解码后的图片" />
+
+    <div class="tip">
+      本工具只在浏览器本地解码文件内容，不会上传到服务器。
+    </div>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById("fileInput");
+    const message = document.getElementById("message");
+    const previewImage = document.getElementById("previewImage");
+    const downloadBtn = document.getElementById("downloadBtn");
+
+    let currentObjectUrl = null;
+
+    fileInput.addEventListener("change", function () {
+      const file = fileInput.files[0];
+
+      resetResult();
+
+      if (!file) {
+        message.textContent = "请选择一个文件";
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.onload = function () {
+        try {
+          let content = reader.result.trim();
+
+          if (!content) {
+            throw new Error("文件内容为空");
+          }
+
+          const result = parseBase64Image(content);
+
+          const byteCharacters = atob(result.base64);
+          const byteNumbers = new Array(byteCharacters.length);
+
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { type: result.mimeType });
+
+          currentObjectUrl = URL.createObjectURL(blob);
+
+          previewImage.src = currentObjectUrl;
+          previewImage.style.display = "block";
+
+          downloadBtn.href = currentObjectUrl;
+          downloadBtn.download = "decoded-image." + getExtension(result.mimeType);
+          downloadBtn.style.display = "inline-block";
+
+          message.textContent = "解码成功";
+        } catch (error) {
+          message.textContent = "解码失败：请确认文件中包含正确的 Base64 图片内容";
+          console.error(error);
+        }
+      };
+
+      reader.onerror = function () {
+        message.textContent = "读取文件失败";
+      };
+
+      reader.readAsText(file);
+    });
+
+    function parseBase64Image(content) {
+      content = content.replace(/\s/g, "");
+
+      const dataUrlMatch = content.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+
+      if (dataUrlMatch) {
+        return {
+          mimeType: dataUrlMatch[1],
+          base64: dataUrlMatch[2]
+        };
+      }
+
+      const mimeType = detectImageMimeType(content);
+
+      return {
+        mimeType: mimeType,
+        base64: content
+      };
+    }
+
+    function detectImageMimeType(base64) {
+      if (base64.startsWith("/9j/")) {
+        return "image/jpeg";
+      }
+
+      if (base64.startsWith("iVBORw0KGgo")) {
+        return "image/png";
+      }
+
+      if (base64.startsWith("R0lGOD")) {
+        return "image/gif";
+      }
+
+      if (base64.startsWith("UklGR")) {
+        return "image/webp";
+      }
+
+      if (base64.startsWith("PHN2Zy") || base64.startsWith("PD94bW")) {
+        return "image/svg+xml";
+      }
+
+      return "image/png";
+    }
+
+    function getExtension(mimeType) {
+      const map = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/gif": "gif",
+        "image/webp": "webp",
+        "image/svg+xml": "svg"
+      };
+
+      return map[mimeType] || "png";
+    }
+
+    function resetResult() {
+      message.textContent = "正在读取文件...";
+
+      previewImage.style.display = "none";
+      previewImage.removeAttribute("src");
+
+      downloadBtn.style.display = "none";
+      downloadBtn.removeAttribute("href");
+
+      if (currentObjectUrl) {
+        URL.revokeObjectURL(currentObjectUrl);
+        currentObjectUrl = null;
+      }
+    }
+  </script>
+</body>
+</html>
