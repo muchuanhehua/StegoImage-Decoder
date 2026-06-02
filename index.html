@@ -13,17 +13,17 @@
 
     body {
       margin: 0;
-      padding: 32px 16px;
+      padding: 40px 16px;
       font-family: Arial, "Microsoft YaHei", sans-serif;
       background: #f5f5f5;
       color: #222;
     }
 
     .container {
-      max-width: 1100px;
+      max-width: 1000px;
       margin: 0 auto;
       background: #fff;
-      padding: 28px;
+      padding: 32px 24px;
       border-radius: 12px;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
       text-align: center;
@@ -31,45 +31,44 @@
 
     h1 {
       margin: 0;
-      font-size: 28px;
-      line-height: 1.4;
+      font-size: 32px;
+      line-height: 1.3;
     }
 
-    .subtitle {
-      margin-top: 6px;
-      margin-bottom: 24px;
+    .author {
+      margin: 8px 0 28px;
       color: #666;
-      font-size: 14px;
+      font-size: 15px;
     }
 
     .upload-area {
+      display: block;
+      width: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 34px 20px;
       border: 2px dashed #bbb;
       border-radius: 12px;
-      padding: 36px 20px;
       background: #fafafa;
       cursor: pointer;
       transition: 0.2s;
     }
 
-    .upload-area:hover {
-      border-color: #2563eb;
-      background: #f0f6ff;
-    }
-
+    .upload-area:hover,
     .upload-area.dragover {
       border-color: #2563eb;
-      background: #eaf2ff;
+      background: #eef5ff;
     }
 
-    .upload-title {
+    .upload-main {
       font-size: 18px;
-      margin-bottom: 8px;
+      color: #222;
     }
 
-    .upload-desc {
-      color: #777;
+    .upload-sub {
+      margin-top: 8px;
       font-size: 14px;
-      line-height: 1.6;
+      color: #777;
     }
 
     input[type="file"] {
@@ -78,38 +77,38 @@
 
     .message {
       margin: 18px 0;
+      min-height: 22px;
       color: #666;
       font-size: 14px;
-      min-height: 20px;
+    }
+
+    .top-download {
+      display: none;
+      margin: 0 auto 18px;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      background: #2563eb;
+      color: white;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .top-download:hover {
+      background: #1d4ed8;
     }
 
     .result-grid {
       display: grid;
-      gap: 16px;
-      margin-top: 20px;
+      gap: 14px;
+      margin-top: 10px;
     }
 
     .image-card {
-      border: 1px solid #ddd;
+      border: 1px solid #e5e5e5;
       border-radius: 10px;
+      padding: 8px;
       background: #fff;
-      padding: 10px;
-      overflow: hidden;
-    }
-
-    .download-btn {
-      display: inline-block;
-      margin-bottom: 10px;
-      padding: 8px 12px;
-      background: #2563eb;
-      color: #fff;
-      text-decoration: none;
-      border-radius: 6px;
-      font-size: 14px;
-    }
-
-    .download-btn:hover {
-      background: #1d4ed8;
     }
 
     .preview-img {
@@ -117,42 +116,39 @@
       height: var(--thumb-height, 220px);
       object-fit: contain;
       border-radius: 8px;
-      background: #f3f3f3;
+      background: #f2f2f2;
       cursor: zoom-in;
-      border: 1px solid #eee;
     }
 
     .file-name {
-      margin-top: 8px;
+      margin-top: 6px;
       color: #777;
       font-size: 12px;
       word-break: break-all;
     }
 
     .error-card {
+      padding: 12px;
       border: 1px solid #f3b4b4;
+      border-radius: 10px;
       background: #fff5f5;
       color: #b91c1c;
-      border-radius: 10px;
-      padding: 14px;
-      font-size: 14px;
-      text-align: left;
+      font-size: 13px;
       word-break: break-all;
     }
 
     .tip {
-      margin-top: 24px;
-      color: #777;
+      margin-top: 22px;
+      color: #888;
       font-size: 13px;
-      line-height: 1.6;
     }
 
     .modal {
       display: none;
       position: fixed;
-      z-index: 999;
       inset: 0;
-      background: rgba(0, 0, 0, 0.82);
+      z-index: 999;
+      background: rgba(0, 0, 0, 0.85);
       align-items: center;
       justify-content: center;
       padding: 24px;
@@ -166,36 +162,35 @@
       max-width: 96vw;
       max-height: 90vh;
       object-fit: contain;
-      border-radius: 8px;
       background: #fff;
+      border-radius: 8px;
     }
 
     .close-btn {
       position: fixed;
       top: 18px;
-      right: 22px;
+      right: 24px;
       color: #fff;
-      font-size: 34px;
-      line-height: 1;
+      font-size: 36px;
       cursor: pointer;
       user-select: none;
     }
 
     @media (max-width: 600px) {
       body {
-        padding: 16px 10px;
+        padding: 20px 10px;
       }
 
       .container {
-        padding: 20px 14px;
+        padding: 26px 14px;
       }
 
       h1 {
-        font-size: 23px;
+        font-size: 26px;
       }
 
       .upload-area {
-        padding: 28px 12px;
+        padding: 28px 14px;
       }
     }
   </style>
@@ -204,14 +199,11 @@
 <body>
   <div class="container">
     <h1>Base64 图片解码</h1>
-    <div class="subtitle">by 木川和华</div>
+    <div class="author">by 木川和华</div>
 
-    <label class="upload-area" id="uploadArea" for="fileInput">
-      <div class="upload-title">点击选择文件，或拖拽文件到这里</div>
-      <div class="upload-desc">
-        支持一次导入多个包含 Base64 图片内容的文件<br />
-        支持纯 Base64，也支持 data:image/...;base64,... 格式
-      </div>
+    <label id="uploadArea" class="upload-area" for="fileInput">
+      <div class="upload-main">点击选择文件，或拖入文件</div>
+      <div class="upload-sub">支持批量导入 Base64 图片文件</div>
     </label>
 
     <input
@@ -221,15 +213,13 @@
       accept=".txt,.base64,.b64,text/plain"
     />
 
-    <div id="message" class="message">
-      请选择或拖入文件
-    </div>
+    <div id="message" class="message">请选择或拖入文件</div>
+
+    <button id="downloadBtn" class="top-download">下载图片</button>
 
     <div id="resultGrid" class="result-grid"></div>
 
-    <div class="tip">
-      本工具只在浏览器本地解码文件内容，不会上传到服务器。
-    </div>
+    <div class="tip">本工具仅在浏览器本地解码，不会上传文件。</div>
   </div>
 
   <div id="modal" class="modal">
@@ -237,16 +227,20 @@
     <img id="modalImage" alt="放大图片" />
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
   <script>
     const fileInput = document.getElementById("fileInput");
     const uploadArea = document.getElementById("uploadArea");
     const message = document.getElementById("message");
     const resultGrid = document.getElementById("resultGrid");
+    const downloadBtn = document.getElementById("downloadBtn");
 
     const modal = document.getElementById("modal");
     const modalImage = document.getElementById("modalImage");
     const closeBtn = document.getElementById("closeBtn");
 
+    let decodedImages = [];
     let objectUrls = [];
 
     fileInput.addEventListener("change", function () {
@@ -265,23 +259,19 @@
     uploadArea.addEventListener("drop", function (event) {
       event.preventDefault();
       uploadArea.classList.remove("dragover");
-
-      const files = event.dataTransfer.files;
-      handleFiles(files);
+      handleFiles(event.dataTransfer.files);
     });
+
+    downloadBtn.addEventListener("click", downloadResult);
 
     closeBtn.addEventListener("click", closeModal);
 
     modal.addEventListener("click", function (event) {
-      if (event.target === modal) {
-        closeModal();
-      }
+      if (event.target === modal) closeModal();
     });
 
     document.addEventListener("keydown", function (event) {
-      if (event.key === "Escape") {
-        closeModal();
-      }
+      if (event.key === "Escape") closeModal();
     });
 
     async function handleFiles(files) {
@@ -296,39 +286,43 @@
 
       updateGridSize(fileArray.length);
 
-      message.textContent = "正在解码 " + fileArray.length + " 个文件...";
-
       let successCount = 0;
       let failCount = 0;
+
+      message.textContent = "正在解码...";
 
       for (const file of fileArray) {
         try {
           const content = await readFileAsText(file);
           const imageInfo = parseBase64Image(content);
-
           const blob = base64ToBlob(imageInfo.base64, imageInfo.mimeType);
-          const objectUrl = URL.createObjectURL(blob);
-          objectUrls.push(objectUrl);
+          const url = URL.createObjectURL(blob);
 
-          const extension = getExtension(imageInfo.mimeType);
-          const downloadName = removeFileExtension(file.name) + "." + extension;
+          objectUrls.push(url);
 
-          createImageCard({
-            fileName: file.name,
-            imageUrl: objectUrl,
-            downloadName
+          const ext = getExtension(imageInfo.mimeType);
+          const fileName = removeFileExtension(file.name) + "." + ext;
+
+          decodedImages.push({
+            name: fileName,
+            blob: blob,
+            url: url
           });
 
+          createImageCard(file.name, url);
           successCount++;
         } catch (error) {
           createErrorCard(file.name);
           failCount++;
-          console.error(error);
         }
       }
 
-      message.textContent =
-        "处理完成：成功 " + successCount + " 个，失败 " + failCount + " 个";
+      if (successCount > 0) {
+        downloadBtn.style.display = "inline-block";
+        downloadBtn.textContent = successCount >= 2 ? "下载压缩包" : "下载图片";
+      }
+
+      message.textContent = "成功 " + successCount + " 个，失败 " + failCount + " 个";
     }
 
     function readFileAsText(file) {
@@ -340,7 +334,7 @@
         };
 
         reader.onerror = function () {
-          reject(new Error("文件读取失败"));
+          reject(new Error("读取失败"));
         };
 
         reader.readAsText(file);
@@ -349,67 +343,52 @@
 
     function parseBase64Image(content) {
       if (!content || !content.trim()) {
-        throw new Error("文件内容为空");
+        throw new Error("内容为空");
       }
 
       content = content.trim();
 
-      const dataUrlMatch = content.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,([\s\S]+)$/);
+      const match = content.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,([\s\S]+)$/);
 
-      if (dataUrlMatch) {
+      if (match) {
         return {
-          mimeType: dataUrlMatch[1],
-          base64: dataUrlMatch[2].replace(/\s/g, "")
+          mimeType: match[1],
+          base64: match[2].replace(/\s/g, "")
         };
       }
 
+      const cleanBase64 = content.replace(/\s/g, "");
+
       return {
-        mimeType: detectImageMimeType(content.replace(/\s/g, "")),
-        base64: content.replace(/\s/g, "")
+        mimeType: detectImageMimeType(cleanBase64),
+        base64: cleanBase64
       };
     }
 
     function base64ToBlob(base64, mimeType) {
-      const byteCharacters = atob(base64);
-      const byteArrays = [];
+      const binary = atob(base64);
+      const bytes = [];
 
-      const sliceSize = 1024;
+      for (let i = 0; i < binary.length; i += 1024) {
+        const slice = binary.slice(i, i + 1024);
+        const numbers = new Array(slice.length);
 
-      for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-        const slice = byteCharacters.slice(offset, offset + sliceSize);
-        const byteNumbers = new Array(slice.length);
-
-        for (let i = 0; i < slice.length; i++) {
-          byteNumbers[i] = slice.charCodeAt(i);
+        for (let j = 0; j < slice.length; j++) {
+          numbers[j] = slice.charCodeAt(j);
         }
 
-        byteArrays.push(new Uint8Array(byteNumbers));
+        bytes.push(new Uint8Array(numbers));
       }
 
-      return new Blob(byteArrays, { type: mimeType });
+      return new Blob(bytes, { type: mimeType });
     }
 
     function detectImageMimeType(base64) {
-      if (base64.startsWith("/9j/")) {
-        return "image/jpeg";
-      }
-
-      if (base64.startsWith("iVBORw0KGgo")) {
-        return "image/png";
-      }
-
-      if (base64.startsWith("R0lGOD")) {
-        return "image/gif";
-      }
-
-      if (base64.startsWith("UklGR")) {
-        return "image/webp";
-      }
-
-      if (base64.startsWith("PHN2Zy") || base64.startsWith("PD94bW")) {
-        return "image/svg+xml";
-      }
-
+      if (base64.startsWith("/9j/")) return "image/jpeg";
+      if (base64.startsWith("iVBORw0KGgo")) return "image/png";
+      if (base64.startsWith("R0lGOD")) return "image/gif";
+      if (base64.startsWith("UklGR")) return "image/webp";
+      if (base64.startsWith("PHN2Zy") || base64.startsWith("PD94bW")) return "image/svg+xml";
       return "image/png";
     }
 
@@ -429,33 +408,26 @@
       return fileName.replace(/\.[^/.]+$/, "");
     }
 
-    function createImageCard(options) {
+    function createImageCard(fileName, imageUrl) {
       const card = document.createElement("div");
       card.className = "image-card";
 
-      const downloadBtn = document.createElement("a");
-      downloadBtn.className = "download-btn";
-      downloadBtn.href = options.imageUrl;
-      downloadBtn.download = options.downloadName;
-      downloadBtn.textContent = "下载图片";
-
       const img = document.createElement("img");
       img.className = "preview-img";
-      img.src = options.imageUrl;
-      img.alt = options.fileName;
-      img.title = "点击放大查看";
+      img.src = imageUrl;
+      img.alt = fileName;
+      img.title = "点击放大";
 
       img.addEventListener("click", function () {
-        openModal(options.imageUrl);
+        openModal(imageUrl);
       });
 
-      const fileName = document.createElement("div");
-      fileName.className = "file-name";
-      fileName.textContent = options.fileName;
+      const name = document.createElement("div");
+      name.className = "file-name";
+      name.textContent = fileName;
 
-      card.appendChild(downloadBtn);
       card.appendChild(img);
-      card.appendChild(fileName);
+      card.appendChild(name);
 
       resultGrid.appendChild(card);
     }
@@ -463,33 +435,66 @@
     function createErrorCard(fileName) {
       const card = document.createElement("div");
       card.className = "error-card";
-      card.textContent = "解码失败：" + fileName + "。请确认文件中包含正确的 Base64 图片内容。";
+      card.textContent = "解码失败：" + fileName;
       resultGrid.appendChild(card);
     }
 
-    function updateGridSize(fileCount) {
+    function updateGridSize(count) {
       let minWidth = 220;
-      let thumbHeight = 220;
+      let height = 220;
 
-      if (fileCount >= 5) {
+      if (count >= 2) {
         minWidth = 180;
-        thumbHeight = 180;
+        height = 180;
       }
 
-      if (fileCount >= 10) {
+      if (count >= 6) {
         minWidth = 150;
-        thumbHeight = 150;
+        height = 150;
       }
 
-      if (fileCount >= 20) {
+      if (count >= 12) {
         minWidth = 120;
-        thumbHeight = 120;
+        height = 120;
       }
 
       resultGrid.style.gridTemplateColumns =
         "repeat(auto-fill, minmax(" + minWidth + "px, 1fr))";
 
-      document.documentElement.style.setProperty("--thumb-height", thumbHeight + "px");
+      document.documentElement.style.setProperty("--thumb-height", height + "px");
+    }
+
+    async function downloadResult() {
+      if (decodedImages.length === 0) return;
+
+      if (decodedImages.length === 1) {
+        const image = decodedImages[0];
+        const a = document.createElement("a");
+        a.href = image.url;
+        a.download = image.name;
+        a.click();
+        return;
+      }
+
+      const zip = new JSZip();
+
+      decodedImages.forEach(function (image) {
+        zip.file(image.name, image.blob);
+      });
+
+      downloadBtn.textContent = "正在打包...";
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const zipUrl = URL.createObjectURL(zipBlob);
+
+      const a = document.createElement("a");
+      a.href = zipUrl;
+      a.download = "decoded-images.zip";
+      a.click();
+
+      URL.revokeObjectURL(zipUrl);
+
+      downloadBtn.textContent = "下载压缩包";
     }
 
     function openModal(imageUrl) {
@@ -504,6 +509,8 @@
 
     function resetResults() {
       resultGrid.innerHTML = "";
+      decodedImages = [];
+      downloadBtn.style.display = "none";
 
       objectUrls.forEach(function (url) {
         URL.revokeObjectURL(url);
