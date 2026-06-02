@@ -41,6 +41,15 @@
       font-size: 15px;
     }
 
+    .repo-link {
+      color: #2563eb;
+      text-decoration: none;
+    }
+
+    .repo-link:hover {
+      text-decoration: underline;
+    }
+
     .upload-area {
       display: block;
       width: 100%;
@@ -65,7 +74,7 @@
       color: #222;
     }
 
-    .upload-sub {
+    。upload-sub {
       margin-top: 8px;
       font-size: 14px;
       color: #777;
@@ -174,6 +183,40 @@
       font-size: 36px;
       cursor: pointer;
       user-select: none;
+      z-index: 1001;
+    }
+
+    .nav-btn {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 48px;
+      height: 64px;
+      border: none;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.18);
+      color: #fff;
+      font-size: 46px;
+      line-height: 1;
+      cursor: pointer;
+      user-select: none;
+      z-index: 1001;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.32);
+    }
+
+    .prev-btn {
+      left: 28px;
+    }
+
+    .next-btn {
+      right: 28px;
+    }
+
+    .nav-btn.hidden {
+      display: none;
     }
 
     @media (max-width: 600px) {
@@ -192,6 +235,20 @@
       .upload-area {
         padding: 28px 14px;
       }
+
+      .nav-btn {
+        width: 40px;
+        height: 56px;
+        font-size: 38px;
+      }
+
+      .prev-btn {
+        left: 10px;
+      }
+
+      .next-btn {
+        right: 10px;
+      }
     }
   </style>
 </head>
@@ -199,7 +256,17 @@
 <body>
   <div class="container">
     <h1>Base64 图片解码</h1>
-    <div class="author">by 木川和华</div>
+
+    <div class="author">
+      by 木川和华 ·
+      <a
+        class="repo-link"
+        href="https://github.com/muchuanhehua/base64-image-decoder"
+        target="_blank"
+      >
+        源码仓库
+      </a>
+    </div>
 
     <label id="uploadArea" class="upload-area" for="fileInput">
       <div class="upload-main">点击选择文件，或拖入文件</div>
@@ -224,7 +291,10 @@
 
   <div id="modal" class="modal">
     <span id="closeBtn" class="close-btn">&times;</span>
+
+    <button id="prevBtn" class="nav-btn prev-btn">‹</button>
     <img id="modalImage" alt="放大图片" />
+    <button id="nextBtn" class="nav-btn next-btn">›</button>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -239,9 +309,12 @@
     const modal = document.getElementById("modal");
     const modalImage = document.getElementById("modalImage");
     const closeBtn = document.getElementById("closeBtn");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
 
     let decodedImages = [];
     let objectUrls = [];
+    let currentImageIndex = 0;
 
     fileInput.addEventListener("change", function () {
       handleFiles(fileInput.files);
@@ -263,15 +336,28 @@
     });
 
     downloadBtn.addEventListener("click", downloadResult);
-
     closeBtn.addEventListener("click", closeModal);
+    prevBtn.addEventListener("click", showPrevImage);
+    nextBtn.addEventListener("click", showNextImage);
 
     modal.addEventListener("click", function (event) {
       if (event.target === modal) closeModal();
     });
 
     document.addEventListener("keydown", function (event) {
-      if (event.key === "Escape") closeModal();
+      if (!modal.classList.contains("show")) return;
+
+      if (event.key === "Escape") {
+        closeModal();
+      }
+
+      if (event.key === "ArrowLeft") {
+        showPrevImage();
+      }
+
+      if (event.key === "ArrowRight") {
+        showNextImage();
+      }
     });
 
     async function handleFiles(files) {
@@ -309,7 +395,9 @@
             url: url
           });
 
-          createImageCard(file.name, url);
+          const imageIndex = decodedImages.length - 1;
+          createImageCard(file.name, url, imageIndex);
+
           successCount++;
         } catch (error) {
           createErrorCard(file.name);
@@ -408,7 +496,7 @@
       return fileName.replace(/\.[^/.]+$/, "");
     }
 
-    function createImageCard(fileName, imageUrl) {
+    function createImageCard(fileName, imageUrl, imageIndex) {
       const card = document.createElement("div");
       card.className = "image-card";
 
@@ -419,7 +507,7 @@
       img.title = "点击放大";
 
       img.addEventListener("click", function () {
-        openModal(imageUrl);
+        openModal(imageIndex);
       });
 
       const name = document.createElement("div");
@@ -497,9 +585,53 @@
       downloadBtn.textContent = "下载压缩包";
     }
 
-    function openModal(imageUrl) {
-      modalImage.src = imageUrl;
+    function openModal(index) {
+      currentImageIndex = index;
+      showCurrentImage();
       modal.classList.add("show");
+    }
+
+    function showCurrentImage() {
+      if (decodedImages.length === 0) return;
+
+      const image = decodedImages[currentImageIndex];
+      modalImage.src = image.url;
+
+      updateNavButtons();
+    }
+
+    function showPrevImage() {
+      if (decodedImages.length <= 1) return;
+
+      currentImageIndex--;
+
+      if (currentImageIndex < 0) {
+        currentImageIndex = decodedImages.length - 1;
+      }
+
+      showCurrentImage();
+    }
+
+    function showNextImage() {
+      if (decodedImages.length <= 1) return;
+
+      currentImageIndex++;
+
+      if (currentImageIndex >= decodedImages.length) {
+        currentImageIndex = 0;
+      }
+
+      showCurrentImage();
+    }
+
+    function updateNavButtons() {
+      if (decodedImages.length <= 1) {
+        prevBtn.classList.add("hidden");
+        nextBtn.classList.add("hidden");
+      } else {
+        prevBtn.classList.remove("hidden");
+        nextBtn.classList.remove("hidden");
+      }
     }
 
     function closeModal() {
@@ -510,6 +642,7 @@
     function resetResults() {
       resultGrid.innerHTML = "";
       decodedImages = [];
+      currentImageIndex = 0;
       downloadBtn.style.display = "none";
 
       objectUrls.forEach(function (url) {
