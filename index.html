@@ -19,9 +19,47 @@
       color: #222;
     }
 
-    .container {
-      max-width: 1000px;
+    .page {
+      max-width: 1240px;
       margin: 0 auto;
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+
+    .side-note {
+      width: 220px;
+      background: #fff;
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+      color: #666;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .side-note-title {
+      margin-bottom: 8px;
+      color: #222;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    .side-note code {
+      display: block;
+      margin: 6px 0;
+      padding: 6px;
+      border-radius: 6px;
+      background: #f3f4f6;
+      color: #333;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 12px;
+      word-break: break-all;
+    }
+
+    .container {
+      flex: 1;
+      min-width: 0;
       background: #fff;
       padding: 32px 24px;
       border-radius: 12px;
@@ -74,7 +112,7 @@
       color: #222;
     }
 
-    。upload-sub {
+    .upload-sub {
       margin-top: 8px;
       font-size: 14px;
       color: #777;
@@ -84,16 +122,37 @@
       display: none;
     }
 
-    .message {
+    。message {
       margin: 18px 0;
       min-height: 22px;
       color: #666;
       font-size: 14px;
     }
 
-    .top-download {
+    .download-row {
       display: none;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
       margin: 0 auto 18px;
+      flex-wrap: wrap;
+    }
+
+    .name-input {
+      width: 220px;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .name-input:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    .top-download {
       padding: 10px 18px;
       border: none;
       border-radius: 8px;
@@ -219,6 +278,22 @@
       display: none;
     }
 
+    @media (max-width: 900px) {
+      .page {
+        flex-direction: column;
+      }
+
+      .side-note {
+        width: 100%;
+        order: 2;
+      }
+
+      .container {
+        width: 100%;
+        order: 1;
+      }
+    }
+
     @media (max-width: 600px) {
       body {
         padding: 20px 10px;
@@ -234,6 +309,11 @@
 
       .upload-area {
         padding: 28px 14px;
+      }
+
+      .name-input {
+        width: 100%;
+        max-width: 260px;
       }
 
       .nav-btn {
@@ -254,39 +334,60 @@
 </head>
 
 <body>
-  <div class="container">
-    <h1>Base64 图片解码</h1>
+  <div class="page">
+    <aside class="side-note">
+      <div class="side-note-title">命名规则</div>
+      不填前缀时默认使用 <b>image</b>。
+      <code>前缀_日期_编号.png</code>
+      示例：
+      <code>image_20260603_001.png</code>
+      批量下载时 ZIP 示例：
+      <code>image_20260603_002-004.zip</code>
+      编号在当前页面内连续递增，刷新或离开页面后重置。
+    </aside>
 
-    <div class="author">
-      by 木川和华 ·
-      <a
-        class="repo-link"
-        href="https://github.com/muchuanhehua/Base64-decode-tool"
-        target="_blank"
-      >
-        源码仓库
-      </a>
-    </div>
+    <main class="container">
+      <h1>Base64 图片解码</h1>
 
-    <label id="uploadArea" class="upload-area" for="fileInput">
-      <div class="upload-main">点击选择文件，或拖入文件</div>
-      <div class="upload-sub">支持批量导入 Base64 图片文件</div>
-    </label>
+      <div class="author">
+        by 木川和华 ·
+        <a
+          class="repo-link"
+          href="https://github.com/muchuanhehua/Base64-decode-tool"
+          target="_blank"
+        >
+          源码仓库
+        </a>
+      </div>
 
-    <input
-      id="fileInput"
-      type="file"
-      multiple
-      accept=".txt,.base64,.b64,text/plain"
-    />
+      <label id="uploadArea" class="upload-area" for="fileInput">
+        <div class="upload-main">点击选择文件，或拖入文件</div>
+        <div class="upload-sub">支持批量导入 Base64 图片文件</div>
+      </label>
 
-    <div id="message" class="message">请选择或拖入文件</div>
+      <input
+        id="fileInput"
+        type="file"
+        multiple
+        accept=".txt,.base64,.b64,text/plain"
+      />
 
-    <button id="downloadBtn" class="top-download">下载图片</button>
+      <div id="message" class="message">请选择或拖入文件</div>
 
-    <div id="resultGrid" class="result-grid"></div>
+      <div id="downloadRow" class="download-row">
+        <input
+          id="fileNameInput"
+          class="name-input"
+          type="text"
+          placeholder="文件名前缀，默认 image"
+        />
+        <button id="downloadBtn" class="top-download">下载图片</button>
+      </div>
 
-    <div class="tip">本工具仅在浏览器本地解码，不会上传文件。</div>
+      <div id="resultGrid" class="result-grid"></div>
+
+      <div class="tip">本工具仅在浏览器本地解码，不会上传文件。</div>
+    </main>
   </div>
 
   <div id="modal" class="modal">
@@ -304,7 +405,9 @@
     const uploadArea = document.getElementById("uploadArea");
     const message = document.getElementById("message");
     const resultGrid = document.getElementById("resultGrid");
+    const downloadRow = document.getElementById("downloadRow");
     const downloadBtn = document.getElementById("downloadBtn");
+    const fileNameInput = document.getElementById("fileNameInput");
 
     const modal = document.getElementById("modal");
     const modalImage = document.getElementById("modalImage");
@@ -315,6 +418,7 @@
     let decodedImages = [];
     let objectUrls = [];
     let currentImageIndex = 0;
+    let downloadCounter = 1;
 
     fileInput.addEventListener("change", function () {
       handleFiles(fileInput.files);
@@ -386,11 +490,8 @@
 
           objectUrls.push(url);
 
-          const ext = getExtension(imageInfo.mimeType);
-          const fileName = removeFileExtension(file.name) + "." + ext;
-
           decodedImages.push({
-            name: fileName,
+            originalName: file.name,
             blob: blob,
             url: url
           });
@@ -406,7 +507,7 @@
       }
 
       if (successCount > 0) {
-        downloadBtn.style.display = "inline-block";
+        downloadRow.style.display = "flex";
         downloadBtn.textContent = successCount >= 2 ? "下载压缩包" : "下载图片";
       }
 
@@ -480,22 +581,6 @@
       return "image/png";
     }
 
-    function getExtension(mimeType) {
-      const map = {
-        "image/jpeg": "jpg",
-        "image/png": "png",
-        "image/gif": "gif",
-        "image/webp": "webp",
-        "image/svg+xml": "svg"
-      };
-
-      return map[mimeType] || "png";
-    }
-
-    function removeFileExtension(fileName) {
-      return fileName.replace(/\.[^/.]+$/, "");
-    }
-
     function createImageCard(fileName, imageUrl, imageIndex) {
       const card = document.createElement("div");
       card.className = "image-card";
@@ -555,20 +640,44 @@
     async function downloadResult() {
       if (decodedImages.length === 0) return;
 
+      const prefix = getFilePrefix();
+      const date = getCurrentDateText();
+
       if (decodedImages.length === 1) {
-        const image = decodedImages[0];
+        const fileNumber = formatNumber(downloadCounter);
+        const fileName = prefix + "_" + date + "_" + fileNumber + ".png";
+
         const a = document.createElement("a");
-        a.href = image.url;
-        a.download = image.name;
+        a.href = decodedImages[0].url;
+        a.download = fileName;
         a.click();
+
+        downloadCounter++;
         return;
       }
 
+      const startNumber = downloadCounter;
       const zip = new JSZip();
 
       decodedImages.forEach(function (image) {
-        zip.file(image.name, image.blob);
+        const fileNumber = formatNumber(downloadCounter);
+        const fileName = prefix + "_" + date + "_" + fileNumber + ".png";
+
+        zip.file(fileName, image.blob);
+        downloadCounter++;
       });
+
+      const endNumber = downloadCounter - 1;
+
+      const zipName =
+        prefix +
+        "_" +
+        date +
+        "_" +
+        formatNumber(startNumber) +
+        "-" +
+        formatNumber(endNumber) +
+        ".zip";
 
       downloadBtn.textContent = "正在打包...";
 
@@ -577,12 +686,42 @@
 
       const a = document.createElement("a");
       a.href = zipUrl;
-      a.download = "decoded-images.zip";
+      a.download = zipName;
       a.click();
 
       URL.revokeObjectURL(zipUrl);
 
       downloadBtn.textContent = "下载压缩包";
+    }
+
+    function getFilePrefix() {
+      let prefix = fileNameInput.value.trim();
+
+      if (!prefix) {
+        prefix = "image";
+      }
+
+      prefix = prefix.replace(/\.[^/.]+$/, "");
+      prefix = prefix.replace(/[\\/:*?"<>|]/g, "_");
+      prefix = prefix.replace(/\s+/g, "_");
+      prefix = prefix.replace(/_+/g, "_");
+      prefix = prefix.replace(/^_+|_+$/g, "");
+
+      return prefix || "image";
+    }
+
+    function getCurrentDateText() {
+      const now = new Date();
+
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+
+      return "" + year + month + day;
+    }
+
+    function formatNumber(number) {
+      return String(number).padStart(3, "0");
     }
 
     function openModal(index) {
@@ -643,7 +782,7 @@
       resultGrid.innerHTML = "";
       decodedImages = [];
       currentImageIndex = 0;
-      downloadBtn.style.display = "none";
+      downloadRow.style.display = "none";
 
       objectUrls.forEach(function (url) {
         URL.revokeObjectURL(url);
