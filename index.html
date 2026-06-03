@@ -28,7 +28,7 @@
     }
 
     .side-note {
-      width: 220px;
+      width: 230px;
       background: #fff;
       border-radius: 12px;
       padding: 18px;
@@ -79,7 +79,7 @@
       font-size: 15px;
     }
 
-    .repo-link {
+    。repo-link {
       color: #2563eb;
       text-decoration: none;
     }
@@ -122,7 +122,7 @@
       display: none;
     }
 
-    。message {
+    .message {
       margin: 18px 0;
       min-height: 22px;
       color: #666;
@@ -341,9 +341,13 @@
       <code>前缀_日期_编号.png</code>
       示例：
       <code>image_20260603_001.png</code>
-      批量下载时 ZIP 示例：
+      批量下载 ZIP 示例：
       <code>image_20260603_002-004.zip</code>
       编号在当前页面内连续递增，刷新或离开页面后重置。
+      <br /><br />
+      支持导入：
+      <code>txt / base64 / b64 / zip</code>
+      ZIP 内会自动读取 Base64 文本文件。
     </aside>
 
     <main class="container">
@@ -362,14 +366,14 @@
 
       <label id="uploadArea" class="upload-area" for="fileInput">
         <div class="upload-main">点击选择文件，或拖入文件</div>
-        <div class="upload-sub">支持批量导入 Base64 图片文件</div>
+        <div class="upload-sub">支持 txt/base64/b64 文件，也支持 zip 压缩包</div>
       </label>
 
       <input
         id="fileInput"
         type="file"
         multiple
-        accept=".txt,.base64,.b64,text/plain"
+        accept=".txt,.base64,.b64,.zip,text/plain,application/zip"
       />
 
       <div id="message" class="message">请选择或拖入文件</div>
@@ -474,8 +478,6 @@
 
       const fileArray = Array.from(files);
 
-      updateGridSize(fileArray.length);
-
       let successCount = 0;
       let failCount = 0;
 
@@ -483,28 +485,26 @@
 
       for (const file of fileArray) {
         try {
-          const content = await readFileAsText(file);
-          const imageInfo = parseBase64Image(content);
-          const blob = base64ToBlob(imageInfo.base64, imageInfo.mimeType);
-          const url = URL.createObjectURL(blob);
+          if (isZipFile(file)) {
+            const result = await processZipFile(file);
 
-          objectUrls.push(url);
+            successCount += result.success;
+            failCount += result.fail;
+          } else {
+            await processBase64TextFile(file.name, async function () {
+              return await readFileAsText(file);
+            });
 
-          decodedImages.push({
-            originalName: file.name,
-            blob: blob,
-            url: url
-          });
-
-          const imageIndex = decodedImages.length - 1;
-          createImageCard(file.name, url, imageIndex);
-
-          successCount++;
+            successCount++;
+          }
         } catch (error) {
           createErrorCard(file.name);
           failCount++;
+          console.error(error);
         }
       }
+
+      updateGridSize(decodedImages.length);
 
       if (successCount > 0) {
         downloadRow.style.display = "flex";
@@ -512,6 +512,89 @@
       }
 
       message.textContent = "成功 " + successCount + " 个，失败 " + failCount + " 个";
+    }
+
+    function isZipFile(file) {
+      const name = file.name.toLowerCase();
+
+      return (
+        name.endsWith(".zip") ||
+        file.type === "application/zip" ||
+        file.type === "application/x-zip-compressed"
+      );
+    }
+
+    function isBase64TextFile(fileName) {
+      const name = fileName.toLowerCase();
+
+      return (
+        name.endsWith(".txt") ||
+        name.endsWith(".base64") ||
+        name.endsWith(".b64")
+      );
+    }
+
+    async function processZipFile(zipFile) {
+      const zip = await JSZip.loadAsync(zipFile);
+      const entries = Object.values(zip.files);
+
+      let success = 0;
+      let fail = 0;
+      let foundTextFile = false;
+
+      for (const entry of entries) {
+        if (entry.dir) {
+          continue;
+        }
+
+        if (!isBase64TextFile(entry.name)) {
+          continue;
+        }
+
+        foundTextFile = true;
+
+        const displayName = zipFile.name + " / " + entry.name;
+
+        try {
+          await processBase64TextFile(displayName, async function () {
+            return await entry.async("text");
+          });
+
+          success++;
+        } catch (error) {
+          createErrorCard(displayName);
+          fail++;
+          console.error(error);
+        }
+      }
+
+      if (!foundTextFile) {
+        createErrorCard(zipFile.name + "：压缩包内没有找到 txt/base64/b64 文件");
+        fail++;
+      }
+
+      return {
+        success: success,
+        fail: fail
+      };
+    }
+
+    async function processBase64TextFile(displayName, getContent) {
+      const content = await getContent();
+      const imageInfo = parseBase64Image(content);
+      const blob = base64ToBlob(imageInfo.base64, imageInfo.mimeType);
+      const url = URL.createObjectURL(blob);
+
+      objectUrls.push(url);
+
+      decodedImages.push({
+        originalName: displayName,
+        blob: blob,
+        url: url
+      });
+
+      const imageIndex = decodedImages.length - 1;
+      createImageCard(displayName, url, imageIndex);
     }
 
     function readFileAsText(file) {
@@ -689,7 +772,9 @@
       a.download = zipName;
       a.click();
 
-      URL.revokeObjectURL(zipUrl);
+      setTimeout(function () {
+        URL.revokeObjectURL(zipUrl);
+      }, 1000);
 
       downloadBtn.textContent = "下载压缩包";
     }
