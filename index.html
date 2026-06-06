@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>噪声图隐写解码 by 木川和华</title>
+<title>隐图解码器 / StegoImage Decoder by 木川和华</title>
 
 <style>
 * {
@@ -56,6 +56,18 @@ body {
   word-break: break-all;
 }
 
+.repo-link {
+  display: inline-block;
+  margin-top: 14px;
+  color: #2563eb;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.repo-link:hover {
+  text-decoration: underline;
+}
+
 .container {
   flex: 1;
   min-width: 0;
@@ -79,9 +91,13 @@ h1 {
 }
 
 .upload-box {
+  display: block;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
   border: 2px dashed #cfcfcf;
   border-radius: 12px;
-  padding: 32px 16px;
+  padding: 34px 20px;
   background: #fafafa;
   cursor: pointer;
   transition: border-color 0.2s, background 0.2s;
@@ -99,37 +115,41 @@ h1 {
 .upload-title {
   font-size: 18px;
   font-weight: bold;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .upload-desc {
   color: #666;
   font-size: 13px;
+  line-height: 1.7;
 }
 
 .option-row {
-  margin-top: 18px;
+  margin-top: 22px;
   display: flex;
   justify-content: center;
-  gap: 12px;
-  flex-wrap: wrap;
 }
 
 .option-row input {
-  width: 260px;
+  width: 340px;
   max-width: 100%;
-  height: 38px;
-  padding: 0 12px;
+  height: 44px;
+  padding: 0 14px;
   border: 1px solid #ddd;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 14px;
+  outline: none;
+}
+
+.option-row input:focus {
+  border-color: #2563eb;
 }
 
 .actions {
-  margin-top: 18px;
+  margin-top: 22px;
   display: flex;
   justify-content: center;
-  gap: 12px;
+  gap: 14px;
   flex-wrap: wrap;
 }
 
@@ -146,6 +166,7 @@ button,
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition: background 0.2s;
 }
 
 button:hover,
@@ -238,18 +259,6 @@ button:disabled {
 
 .card-actions a:hover {
   background: #1d4ed8;
-}
-
-.repo-link {
-  display: inline-block;
-  margin-top: 14px;
-  color: #2563eb;
-  text-decoration: none;
-  font-size: 13px;
-}
-
-.repo-link:hover {
-  text-decoration: underline;
 }
 
 .modal {
@@ -361,15 +370,15 @@ button:disabled {
 <div class="page">
   <aside class="side-note">
     <div class="side-note-title">使用说明</div>
-    上传由 ComfyUI EasyToolkit 生成的 PNG 噪声图，即可还原其中隐藏的原始图片。
+    一个用于处理 PNG 噪声隐写图的纯前端网页工具。
 
     <code>支持 PNG / ZIP 批量导入</code>
-    <code>请勿使用 JPG 压缩</code>
-    <code>请勿缩放、裁剪或修改噪声图</code>
+    <code>本地解码，不上传文件</code>
+    <code>请勿压缩、缩放或修改噪声图</code>
 
     <a
       class="repo-link"
-      href="https://github.com/muchuanhehua/noise-image-decode-tool"
+      href="https://github.com/muchuanhehua/StegoImage-Decoder"
       target="_blank"
     >
       源码仓库
@@ -377,8 +386,8 @@ button:disabled {
   </aside>
 
   <main class="container">
-    <h1>噪声图隐写解码</h1>
-    <div class="author">by 木川和华</div>
+    <h1>隐图解码器</h1>
+    <div class="author">StegoImage Decoder by 木川和华</div>
 
     <label class="upload-box" id="uploadBox">
       <input
@@ -388,7 +397,9 @@ button:disabled {
         multiple
       />
       <div class="upload-title">点击或拖拽上传 PNG 噪声图 / ZIP</div>
-      <div class="upload-desc">支持批量上传，ZIP 中会自动读取 PNG 文件。</div>
+      <div class="upload-desc">
+        支持批量上传，ZIP 中会自动读取 PNG 文件。
+      </div>
     </label>
 
     <div class="option-row">
@@ -445,10 +456,13 @@ let currentImageIndex = 0;
 
 /**
  * 固定解码参数。
- * 对应 SteganographyEncoder 默认界面参数：
+ * 对应 ComfyUI EasyToolkit 的 SteganographyEncoder 默认参数：
  * use_alpha = false
  * top_margin_percent = 20
  * bottom_margin_percent = 20
+ *
+ * 按你的使用流程，PNG 一旦生成就是固定结果，
+ * 因此前端不暴露这些参数。
  */
 const DEFAULT_USE_ALPHA = false;
 const DEFAULT_TOP_MARGIN_RATIO = 0.2;
@@ -519,8 +533,8 @@ async function handleFiles(files) {
   for (const file of files) {
     if (isZipFile(file)) {
       try {
-        const extracted = await extractPngFilesFromZip(file);
-        pngFiles.push(...extracted);
+        const extractedFiles = await extractPngFilesFromZip(file);
+        pngFiles.push(...extractedFiles);
       } catch (error) {
         console.error(error);
         appendMessage("ZIP 读取失败：" + file.name);
@@ -588,21 +602,32 @@ async function handleFiles(files) {
 
 async function decodeNoisePngFile(file) {
   const imageData = await readPngToImageData(file);
-
   const payload = decodeSteganography(imageData);
 
-  const mime = detectImageMime(payload);
+  /**
+   * 兼容 ResourceHeader：
+   * [4-byte resource header][body]
+   *
+   * Header:
+   * Byte 0: resource format number
+   * Byte 1: compression mode, 0=no_compression, 1=zlib_compression
+   * Byte 2: serialization format, 0=none, 1=bytes_with_headers
+   * Byte 3: reserved
+   */
+  const imageBytes = unwrapPossibleResourcePayload(payload);
+
+  const mime = detectImageMime(imageBytes);
   const ext = getExtensionFromMime(mime);
 
   if (mime === "application/octet-stream") {
     throw new Error("无法识别隐藏数据为图片，请确认上传的是原始 PNG 噪声图。");
   }
 
-  const blob = new Blob([payload], { type: mime });
+  const blob = new Blob([imageBytes], { type: mime });
 
   return {
     blob,
-    bytes: payload,
+    bytes: imageBytes,
     mime,
     ext
   };
@@ -622,6 +647,11 @@ function decodeSteganography(imageData) {
 
   let writeIndex = 0;
 
+  /**
+   * Canvas ImageData 永远是 RGBA。
+   * 但默认 use_alpha=false，因此需要按 RGB 重新展开，
+   * 跳过每个像素的 Alpha。
+   */
   for (let i = 0; i < rgba.length; i += 4) {
     flattened[writeIndex++] = rgba[i];
     flattened[writeIndex++] = rgba[i + 1];
@@ -646,12 +676,20 @@ function decodeSteganography(imageData) {
   const dataAreaStart = topMarginBytes;
   const dataAreaEnd = dataAreaStart + dataAreaBytes;
 
+  if (dataAreaEnd > flattened.length) {
+    throw new Error("数据区域越界。");
+  }
+
   const dataArea = flattened.slice(dataAreaStart, dataAreaEnd);
 
   if (dataArea.length < 4) {
     throw new Error("数据区域过小，无法读取长度头。");
   }
 
+  /**
+   * Steganography 数据格式：
+   * [4-byte big-endian data length][data bytes][random noise...]
+   */
   const dataLength =
     (
       (dataArea[0] << 24) |
@@ -683,11 +721,125 @@ async function readPngToImageData(file) {
   return ctx.getImageData(0, 0, canvas.width, canvas.height);
 }
 
+function unwrapPossibleResourcePayload(bytes) {
+  if (!bytes || bytes.length < 4) {
+    return bytes;
+  }
+
+  /**
+   * 如果本身就是图片 bytes，直接返回。
+   */
+  if (detectImageMime(bytes) !== "application/octet-stream") {
+    return bytes;
+  }
+
+  /**
+   * ResourceHeader 固定 4 字节：
+   * byte0 = format_number
+   * byte1 = compression_mode
+   * byte2 = serialization_format
+   * byte3 = reserved
+   */
+  const formatNumber = bytes[0];
+  const compressionMode = bytes[1];
+  const serializationFormat = bytes[2];
+
+  /**
+   * 简单校验：
+   * compressionMode 目前已知 0 / 1
+   * serializationFormat 目前已知 0 / 1
+   */
+  if (compressionMode !== 0 && compressionMode !== 1) {
+    return bytes;
+  }
+
+  if (serializationFormat !== 0 && serializationFormat !== 1) {
+    return bytes;
+  }
+
+  if (compressionMode === 1) {
+    throw new Error("隐藏数据使用了 zlib 压缩，当前纯前端版本未启用 zlib 解压。");
+  }
+
+  const body = bytes.slice(4);
+
+  /**
+   * serialization_format = 0:
+   * NONE，标准单段数据。
+   */
+  if (serializationFormat === 0) {
+    if (detectImageMime(body) !== "application/octet-stream") {
+      return body;
+    }
+
+    return bytes;
+  }
+
+  /**
+   * serialization_format = 1:
+   * BYTES_WITH_HEADERS
+   * 格式：
+   * [4-byte size][data][4-byte size][data]...
+   */
+  if (serializationFormat === 1) {
+    const parts = splitBytesWithHeaders(body);
+
+    for (const part of parts) {
+      if (detectImageMime(part) !== "application/octet-stream") {
+        return part;
+      }
+    }
+
+    return bytes;
+  }
+
+  return bytes;
+}
+
+function splitBytesWithHeaders(mergedBytes) {
+  const list = [];
+  let offset = 0;
+  const totalLength = mergedBytes.length;
+
+  while (offset < totalLength) {
+    if (offset + 4 > totalLength) {
+      break;
+    }
+
+    const size =
+      (
+        (mergedBytes[offset] << 24) |
+        (mergedBytes[offset + 1] << 16) |
+        (mergedBytes[offset + 2] << 8) |
+        mergedBytes[offset + 3]
+      ) >>> 0;
+
+    offset += 4;
+
+    if (size <= 0) {
+      break;
+    }
+
+    if (offset + size > totalLength) {
+      break;
+    }
+
+    list.push(mergedBytes.slice(offset, offset + size));
+    offset += size;
+  }
+
+  return list;
+}
+
 function detectImageMime(bytes) {
   if (!bytes || bytes.length < 4) {
     return "application/octet-stream";
   }
 
+  /**
+   * PNG:
+   * 89 50 4E 47
+   */
   if (
     bytes[0] === 0x89 &&
     bytes[1] === 0x50 &&
@@ -697,10 +849,21 @@ function detectImageMime(bytes) {
     return "image/png";
   }
 
-  if (bytes[0] === 0xff && bytes[1] === 0xd8) {
+  /**
+   * JPEG:
+   * FF D8
+   */
+  if (
+    bytes[0] === 0xff &&
+    bytes[1] === 0xd8
+  ) {
     return "image/jpeg";
   }
 
+  /**
+   * WebP:
+   * RIFF....WEBP
+   */
   if (
     bytes.length >= 12 &&
     bytes[0] === 0x52 &&
@@ -715,6 +878,10 @@ function detectImageMime(bytes) {
     return "image/webp";
   }
 
+  /**
+   * GIF:
+   * GIF87a / GIF89a
+   */
   if (
     bytes[0] === 0x47 &&
     bytes[1] === 0x49 &&
@@ -779,7 +946,6 @@ function renderImageCard(item, index) {
 async function extractPngFilesFromZip(file) {
   const zip = await JSZip.loadAsync(file);
   const result = [];
-
   const entries = Object.values(zip.files);
 
   for (const entry of entries) {
@@ -787,7 +953,9 @@ async function extractPngFilesFromZip(file) {
     if (!entry.name.toLowerCase().endsWith(".png")) continue;
 
     const blob = await entry.async("blob");
-    const extractedFile = new File([blob], entry.name.split("/").pop(), {
+    const fileName = entry.name.split("/").pop();
+
+    const extractedFile = new File([blob], fileName, {
       type: "image/png"
     });
 
