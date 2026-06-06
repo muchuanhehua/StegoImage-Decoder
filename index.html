@@ -40,6 +40,7 @@ body {
 
 .side-note {
   width: 230px;
+  flex-shrink: 0;
   background: #fff;
   border-radius: 12px;
   padding: 18px;
@@ -135,16 +136,18 @@ h1 {
   line-height: 1.7;
 }
 
-.option-row {
+.control-row {
   margin-top: 22px;
   display: flex;
   justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .name-input {
   width: 340px;
   max-width: 100%;
-  height: 44px;
+  height: 42px;
   padding: 0 14px;
   border: 1px solid #ddd;
   border-radius: 10px;
@@ -156,19 +159,11 @@ h1 {
   border-color: #2563eb;
 }
 
-.actions {
-  margin-top: 22px;
-  display: flex;
-  justify-content: center;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-
-button，
-.button-link {
+button {
   border: none;
   border-radius: 8px;
-  padding: 10px 18px;
+  padding: 0 18px;
+  height: 42px;
   background: #2563eb;
   color: #fff;
   font-size: 14px;
@@ -180,17 +175,8 @@ button，
   transition: background 0.2s;
 }
 
-button:hover,
-.button-link:hover {
+button:hover {
   background: #1d4ed8;
-}
-
-buttonsecondary {
-  background: #6b7280;
-}
-
-button.secondary:hover {
-  background: #4b5563;
 }
 
 button:disabled {
@@ -204,11 +190,6 @@ button:disabled {
   color: #555;
   font-size: 14px;
   white-space: pre-wrap;
-}
-
-.download-row {
-  margin-top: 16px;
-  display: none;
 }
 
 .result-grid {
@@ -382,7 +363,11 @@ button:disabled {
 
   .name-input {
     width: 100%;
-    max-width: 260px;
+  }
+
+  button {
+    width: 100%;
+    max-width: 340px;
   }
 
   .image-card img {
@@ -410,9 +395,9 @@ button:disabled {
 <div class="page">
   <aside class="side-note">
     <div class="side-note-title">使用说明</div>
-    一个用于处理 PNG 噪声隐写图的纯前端网页工具.
+    一个用于处理 PNG 噪声隐写图的纯前端网页工具。
 
-    <code>支持 PNG / ZIP 批量导入</code>
+    <code>支持 PNG 噪声图或压缩包导入</code>
     <code>本地解码，不上传文件</code>
     <code>请勿压缩、缩放或修改噪声图</code>
   </aside>
@@ -434,33 +419,26 @@ button:disabled {
       <input
         id="fileInput"
         type="file"
-        accept=".png,.zip,image/png,application/zip"
+        accept=".png,.zip,.rar,.7z,.tar,.gz,.bz2,image/png,application/zip,application/x-zip-compressed"
         multiple
       />
-      <div class="upload-title">点击或拖拽上传 PNG 噪声图 / ZIP</div>
+      <div class="upload-title">拖入 PNG 噪声图或压缩包</div>
       <div class="upload-desc">
-        支持批量上传，ZIP 中会自动读取 PNG 文件.
+        也可以点击此区域选择文件，解码结果将在浏览器本地生成。
       </div>
     </label>
 
-    <div class="option-row">
+    <div class="control-row">
       <input
         id="fileNameInput"
         class="name-input"
         type="text"
         placeholder="输出文件名前缀，默认 image"
       />
+      <button id="downloadBtn" type="button" disabled>下载图片</button>
     </div>
 
-    <div class="actions">
-      <button id="selectBtn" type="button">选择文件</button>
-      <button id="clearBtn" class="secondary" type="button">清空结果</button>
-      <button id="downloadBtn" type="button" disabled>批量下载 ZIP</button>
-    </div>
-
-    <div id="message" class="message">等待上传文件.</div>
-
-    <div id="downloadRow" class="download-row"></div>
+    <div id="message" class="message">等待拖入文件。</div>
 
     <div id="resultGrid" class="result-grid"></div>
   </main>
@@ -478,12 +456,9 @@ button:disabled {
 <script>
 const uploadBox = document.getElementById("uploadBox");
 const fileInput = document.getElementById("fileInput");
-const selectBtn = document.getElementById("selectBtn");
-const clearBtn = document.getElementById("clearBtn");
 const downloadBtn = document.getElementById("downloadBtn");
 const resultGrid = document.getElementById("resultGrid");
 const message = document.getElementById("message");
-const downloadRow = document.getElementById("downloadRow");
 const fileNameInput = document.getElementById("fileNameInput");
 
 const modal = document.getElementById("modal");
@@ -495,9 +470,10 @@ const nextBtn = document.getElementById("nextBtn");
 let decodedImages = [];
 let objectUrls = [];
 let currentImageIndex = 0;
+let currentInputMode = "image";
 
 /**
- * 固定解码参数.
+ * 固定解码参数。
  * 对应 EasyToolkit SteganographyEncoder 默认输入：
  * use_alpha = false
  * top_margin_percent = 20
@@ -507,22 +483,13 @@ const DEFAULT_USE_ALPHA = false;
 const DEFAULT_TOP_MARGIN_RATIO = 0.2;
 const DEFAULT_BOTTOM_MARGIN_RATIO = 0.2;
 
-selectBtn.addEventListener("click", function () {
-  fileInput.click();
-});
-
 fileInput.addEventListener("change", async function () {
   await handleFiles(Array.from(fileInput.files || []));
   fileInput.value = "";
 });
 
-clearBtn.addEventListener("click", function () {
-  resetResults();
-  message.textContent = "已清空结果.";
-});
-
 downloadBtn.addEventListener("click", async function () {
-  await downloadAllAsZip();
+  await downloadDecodedResults();
 });
 
 uploadBox.addEventListener("dragover", function (event) {
@@ -568,6 +535,8 @@ async function handleFiles(files) {
   resetResults();
 
   const pngFiles = [];
+  const hasArchiveInput = files.some(isArchiveFile);
+  currentInputMode = hasArchiveInput ? "archive" : "image";
 
   for (const file of files) {
     if (isZipFile(file)) {
@@ -576,17 +545,20 @@ async function handleFiles(files) {
         pngFiles.push(...extractedFiles);
       } catch (error) {
         console.error(error);
-        appendMessage("ZIP 读取失败：" + file.name);
+        appendMessage("压缩包读取失败：" + file.name);
       }
+    } else if (isUnsupportedArchiveFile(file)) {
+      appendMessage("暂无法解析该压缩包：" + file.name);
     } else if (isPngFile(file)) {
       pngFiles.push(file);
     } else {
-      appendMessage("已跳过非 PNG/ZIP 文件：" + file.name);
+      appendMessage("已跳过不支持的文件：" + file.name);
     }
   }
 
   if (!pngFiles.length) {
-    message.textContent = "没有找到可处理的 PNG 文件.";
+    message.textContent = "没有找到可处理的 PNG 噪声图。";
+    updateDownloadButton();
     return;
   }
 
@@ -631,12 +603,9 @@ async function handleFiles(files) {
     }
   }
 
-  if (successCount > 0) {
-    downloadBtn.disabled = false;
-    downloadRow.style.display = "block";
-  }
+  updateDownloadButton();
 
-  let finalMessage = `处理完成.\n成功：${successCount} 张\n失败：${failCount} 张`;
+  let finalMessage = `处理完成。\n成功：${successCount} 张\n失败：${failCount} 张`;
 
   if (failMessages.length) {
     finalMessage += "\n\n" + failMessages.join("\n\n");
@@ -654,7 +623,7 @@ async function decodeNoisePngFile(file) {
   const ext = getExtensionFromMime(mime);
 
   if (mime === "application/octet-stream") {
-    throw new Error("无法识别隐藏数据为图片，请确认上传的是原始 PNG 噪声图.");
+    throw new Error("无法识别隐藏数据为图片，请确认上传的是原始 PNG 噪声图。");
   }
 
   const blob = new Blob([imageBytes], { type: mime });
@@ -682,8 +651,8 @@ function decodeSteganography(imageData) {
   let writeIndex = 0;
 
   /**
-   * Canvas 读取出的 ImageData 永远是 RGBA.
-   * 但 EasyToolkit 默认 use_alpha=false，所以这里按 RGB 展平.
+   * Canvas ImageData 永远是 RGBA。
+   * EasyToolkit 默认 use_alpha=false，因此这里按 RGB 展平。
    */
   for (let i = 0; i < rgba.length; i += 4) {
     flattened[writeIndex++] = rgba[i];
@@ -700,7 +669,7 @@ function decodeSteganography(imageData) {
   const availableRows = height - topMarginRows - bottomMarginRows;
 
   if (availableRows <= 0) {
-    throw new Error("PNG 尺寸异常，无法定位隐藏数据区域.");
+    throw new Error("PNG 尺寸异常，无法定位隐藏数据区域。");
   }
 
   const topMarginBytes = topMarginRows * width * channels;
@@ -710,13 +679,13 @@ function decodeSteganography(imageData) {
   const dataAreaEnd = dataAreaStart + dataAreaBytes;
 
   if (dataAreaEnd > flattened.length) {
-    throw new Error("数据区域越界.");
+    throw new Error("数据区域越界。");
   }
 
   const dataArea = flattened.slice(dataAreaStart, dataAreaEnd);
 
   if (dataArea.length < 4) {
-    throw new Error("数据区域过小，无法读取长度头.");
+    throw new Error("数据区域过小，无法读取长度头。");
   }
 
   /**
@@ -732,7 +701,7 @@ function decodeSteganography(imageData) {
     ) >>> 0;
 
   if (dataLength <= 0 || dataLength > dataArea.length - 4) {
-    throw new Error("隐藏数据长度无效，请确认 PNG 未被压缩、缩放、裁剪或修改.");
+    throw new Error("隐藏数据长度无效，请确认 PNG 未被压缩、缩放、裁剪或修改。");
   }
 
   return dataArea.slice(4, 4 + dataLength);
@@ -765,7 +734,6 @@ function unwrapPossibleResourcePayload(bytes) {
 
   /**
    * 兼容 EasyToolkit ResourceHeader：
-   * 固定 4 字节：
    * Byte 0: Resource format number
    * Byte 1: Compression mode，0=no_compression，1=zlib_compression
    * Byte 2: Serialization format，0=none，1=bytes_with_headers
@@ -783,7 +751,7 @@ function unwrapPossibleResourcePayload(bytes) {
   }
 
   if (compressionMode === 1) {
-    throw new Error("隐藏数据使用了 zlib 压缩，当前网页未启用 zlib 解压.");
+    throw new Error("隐藏数据使用了 zlib 压缩，当前网页未启用 zlib 解压。");
   }
 
   const body = bytes.slice(4);
@@ -964,16 +932,34 @@ async function extractPngFilesFromZip(file) {
   return result;
 }
 
-async function downloadAllAsZip() {
+async function downloadDecodedResults() {
   if (!decodedImages.length) return;
 
+  if (currentInputMode === "image" && decodedImages.length === 1) {
+    downloadSingleImage(decodedImages[0]);
+    return;
+  }
+
+  await downloadAllAsZip();
+}
+
+function downloadSingleImage(item) {
+  const link = document.createElement("a");
+  link.href = item.url;
+  link.download = item.name;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+async function downloadAllAsZip() {
   const zip = new JSZip();
 
   for (const item of decodedImages) {
     zip.file(item.name, item.blob);
   }
 
-  message.textContent = "正在生成 ZIP...";
+  message.textContent = "正在生成压缩包...";
 
   const content = await zip.generateAsync({
     type: "blob",
@@ -994,7 +980,23 @@ async function downloadAllAsZip() {
   link.click();
   document.body.removeChild(link);
 
-  message.textContent = `ZIP 已生成：${zipName}`;
+  message.textContent = `压缩包已生成：${zipName}`;
+}
+
+function updateDownloadButton() {
+  if (!decodedImages.length) {
+    downloadBtn.disabled = true;
+    downloadBtn.textContent = "下载图片";
+    return;
+  }
+
+  downloadBtn.disabled = false;
+
+  if (currentInputMode === "image" && decodedImages.length === 1) {
+    downloadBtn.textContent = "下载图片";
+  } else {
+    downloadBtn.textContent = "下载压缩包";
+  }
 }
 
 function openModal(index) {
@@ -1046,8 +1048,7 @@ function resetResults() {
   resultGrid.innerHTML = "";
   decodedImages = [];
   currentImageIndex = 0;
-  downloadRow.style.display = "none";
-  downloadBtn.disabled = true;
+  currentInputMode = "image";
 
   objectUrls.forEach(function (url) {
     URL.revokeObjectURL(url);
@@ -1055,6 +1056,7 @@ function resetResults() {
 
   objectUrls = [];
   message.textContent = "正在处理...";
+  updateDownloadButton();
 }
 
 function getFilePrefix() {
@@ -1099,6 +1101,23 @@ function isZipFile(file) {
     file.type === "application/x-zip-compressed" ||
     file.name.toLowerCase().endsWith(".zip")
   );
+}
+
+function isArchiveFile(file) {
+  const name = file.name.toLowerCase();
+
+  return (
+    isZipFile(file) ||
+    name.endsWith(".rar") ||
+    name.endsWith(".7z") ||
+    name.endsWith(".tar") ||
+    name.endsWith(".gz") ||
+    name.endsWith(".bz2")
+  );
+}
+
+function isUnsupportedArchiveFile(file) {
+  return isArchiveFile(file) && !isZipFile(file);
 }
 
 function appendMessage(text) {
