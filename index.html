@@ -1,1131 +1,946 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>噪声图隐写解码 by 木川和华</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>噪声图隐写解码 by 木川和华</title>
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+<style>
+* {
+  box-sizing: border-box;
+}
 
-    body {
-      margin: 0;
-      padding: 40px 16px;
-      font-family: Arial, "Microsoft YaHei", sans-serif;
-      background: #f5f5f5;
-      color: #222;
-    }
+body {
+  margin: 0;
+  padding: 40px 16px;
+  font-family: Arial, "Microsoft YaHei", sans-serif;
+  background: #f5f5f5;
+  color: #222;
+}
 
-    .page {
-      max-width: 1240px;
-      margin: 0 auto;
-      display: flex;
-      gap: 20px;
-      align-items: flex-start;
-    }
+.page {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
 
-    .side-note {
-      width: 250px;
-      background: #fff;
-      border-radius: 12px;
-      padding: 18px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-      color: #666;
-      font-size: 13px;
-      line-height: 1.7;
-    }
+.side-note {
+  width: 230px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  color: #666;
+  font-size: 13px;
+  line-height: 1.7;
+}
 
-    .side-note-title {
-      margin-bottom: 8px;
-      color: #222;
-      font-size: 15px;
-      font-weight: bold;
-    }
+.side-note-title {
+  margin-bottom: 8px;
+  color: #222;
+  font-size: 15px;
+  font-weight: bold;
+}
 
-    .side-note code {
-      display: block;
-      margin: 6px 0;
-      padding: 6px;
-      border-radius: 6px;
-      background: #f3f4f6;
-      color: #333;
-      font-family: Consolas, Monaco, monospace;
-      font-size: 12px;
-      word-break: break-all;
-    }
+.side-note code {
+  display: block;
+  margin: 6px 0;
+  padding: 6px;
+  border-radius: 6px;
+  background: #f3f4f6;
+  color: #333;
+  font-family: Consolas, Monaco, monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
 
-    .container {
-      flex: 1;
-      min-width: 0;
-      background: #fff;
-      padding: 32px 24px;
-      border-radius: 12px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-      text-align: center;
-    }
+.container {
+  flex: 1;
+  min-width: 0;
+  background: #fff;
+  padding: 32px 24px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
 
-    h1 {
-      margin: 0;
-      font-size: 32px;
-      line-height: 1.3;
-    }
+h1 {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.3;
+}
 
-    .author {
-      margin: 8px 0 28px;
-      color: #666;
-      font-size: 15px;
-    }
+.author {
+  margin: 8px 0 28px;
+  color: #666;
+  font-size: 15px;
+}
 
-    .upload-box {
-      border: 2px dashed #cfcfcf;
-      border-radius: 12px;
-      padding: 28px 16px;
-      background: #fafafa;
-      transition: border-color 0.2s, background 0.2s;
-      cursor: pointer;
-    }
+.upload-box {
+  border: 2px dashed #cfcfcf;
+  border-radius: 12px;
+  padding: 32px 16px;
+  background: #fafafa;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
 
-    .upload-box.dragover {
-      border-color: #2563eb;
-      background: #eff6ff;
-    }
+.upload-box.dragover {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
 
-    .upload-box input {
-      display: none;
-    }
+.upload-box input {
+  display: none;
+}
 
-    .upload-title {
-      font-size: 18px;
-      font-weight: bold;
-      margin-bottom: 8px;
-    }
+.upload-title {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
 
-    .upload-desc {
-      font-size: 13px;
-      color: #666;
-    }
+.upload-desc {
+  color: #666;
+  font-size: 13px;
+}
 
-    .option-panel {
-      margin-top: 18px;
-      padding: 16px;
-      border-radius: 10px;
-      background: #f9fafb;
-      text-align: left;
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-      align-items: end;
-    }
+.option-row {
+  margin-top: 18px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
 
-    .option-item {
-      font-size: 13px;
-      color: #444;
-    }
+.option-row input {
+  width: 260px;
+  max-width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+}
 
-    .option-item label {
-      display: block;
-      margin-bottom: 6px;
-      font-weight: bold;
-    }
+.actions {
+  margin-top: 18px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
 
-    .option-item input[type="number"],
-    .option-item input[type="text"] {
-      width: 100%;
-      height: 36px;
-      padding: 0 10px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      background: #fff;
-      font-size: 14px;
-    }
+button,
+.button-link {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 
-    .checkbox-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      height: 36px;
-    }
+button:hover,
+.button-link:hover {
+  background: #1d4ed8;
+}
 
-    .actions {
-      margin-top: 18px;
-      display: flex;
-      justify-content: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
+button.secondary {
+  background: #6b7280;
+}
 
-    button,
-    .button-link {
-      border: none;
-      border-radius: 8px;
-      padding: 10px 18px;
-      background: #2563eb;
-      color: #fff;
-      font-size: 14px;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.2s;
-    }
+button.secondary:hover {
+  background: #4b5563;
+}
 
-    button:hover,
-    .button-link:hover {
-      background: #1d4ed8;
-    }
+button:disabled {
+  background: #a3a3a3;
+  cursor: not-allowed;
+}
 
-    button.secondary {
-      background: #6b7280;
-    }
+.message {
+  margin-top: 18px;
+  min-height: 24px;
+  color: #555;
+  font-size: 14px;
+  white-space: pre-wrap;
+}
 
-    button.secondary:hover {
-      background: #4b5563;
-    }
+.download-row {
+  margin-top: 16px;
+  display: none;
+}
 
-    button.danger {
-      background: #dc2626;
-    }
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+  margin-top: 20px;
+}
 
-    button.danger:hover {
-      background: #b91c1c;
-    }
+.image-card {
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  padding: 8px;
+  background: #fff;
+  text-align: left;
+}
 
-    button:disabled {
-      background: #a3a3a3;
-      cursor: not-allowed;
-    }
+.image-card img {
+  width: 100%;
+  height: 160px;
+  object-fit: contain;
+  display: block;
+  background: #f3f4f6;
+  border-radius: 8px;
+  cursor: zoom-in;
+}
 
-    .message {
-      margin-top: 18px;
-      min-height: 24px;
-      color: #555;
-      font-size: 14px;
-      white-space: pre-wrap;
-    }
+.image-name {
+  margin-top: 8px;
+  color: #333;
+  font-size: 12px;
+  word-break: break-all;
+  line-height: 1.4;
+}
 
-    .download-row {
-      margin-top: 16px;
-      display: none;
-    }
+.image-meta {
+  margin-top: 4px;
+  color: #888;
+  font-size: 12px;
+  word-break: break-all;
+}
 
-    .result-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 14px;
-      margin-top: 20px;
-    }
+.card-actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+}
 
-    .image-card {
-      border: 1px solid #e5e5e5;
-      border-radius: 10px;
-      padding: 8px;
-      background: #fff;
-      text-align: left;
-    }
+.card-actions a {
+  flex: 1;
+  text-align: center;
+  padding: 7px 8px;
+  border-radius: 7px;
+  background: #2563eb;
+  color: #fff;
+  text-decoration: none;
+  font-size: 12px;
+}
 
-    .image-card img {
-      width: 100%;
-      height: 160px;
-      object-fit: contain;
-      display: block;
-      background: #f3f4f6;
-      border-radius: 8px;
-      cursor: zoom-in;
-    }
+.card-actions a:hover {
+  background: #1d4ed8;
+}
 
-    .image-name {
-      margin-top: 8px;
-      color: #333;
-      font-size: 12px;
-      word-break: break-all;
-      line-height: 1.4;
-    }
+.repo-link {
+  display: inline-block;
+  margin-top: 14px;
+  color: #2563eb;
+  text-decoration: none;
+  font-size: 13px;
+}
 
-    .image-meta {
-      margin-top: 4px;
-      color: #888;
-      font-size: 12px;
-      word-break: break-all;
-    }
+.repo-link:hover {
+  text-decoration: underline;
+}
 
-    .card-actions {
-      margin-top: 8px;
-      display: flex;
-      gap: 8px;
-    }
+.modal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.82);
+  z-index: 1000;
+  padding: 24px;
+}
 
-    .card-actions a {
-      flex: 1;
-      text-align: center;
-      padding: 7px 8px;
-      border-radius: 7px;
-      background: #2563eb;
-      color: #fff;
-      text-decoration: none;
-      font-size: 12px;
-    }
+.modal.show {
+  display: flex;
+}
 
-    .card-actions a:hover {
-      background: #1d4ed8;
-    }
+.modal img {
+  max-width: 92vw;
+  max-height: 88vh;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 8px;
+}
 
-    .repo-link {
-      display: inline-block;
-      margin-top: 16px;
-      color: #2563eb;
-      text-decoration: none;
-      font-size: 13px;
-    }
+.close-btn {
+  position: fixed;
+  top: 20px;
+  right: 28px;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 30px;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  z-index: 1001;
+}
 
-    .repo-link:hover {
-      text-decoration: underline;
-    }
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
 
-    .modal {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0, 0, 0, 0.82);
-      z-index: 1000;
-      padding: 24px;
-    }
+.nav-btn {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  z-index: 1001;
+}
 
-    .modal.show {
-      display: flex;
-    }
+.nav-btn:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
 
-    .modal img {
-      max-width: 92vw;
-      max-height: 88vh;
-      object-fit: contain;
-      background: #fff;
-      border-radius: 8px;
-    }
+.prev-btn {
+  left: 28px;
+}
 
-    .close-btn {
-      position: fixed;
-      top: 20px;
-      right: 28px;
-      width: 46px;
-      height: 46px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.2);
-      color: #fff;
-      font-size: 30px;
-      line-height: 1;
-      cursor: pointer;
-      user-select: none;
-      z-index: 1001;
-    }
+.next-btn {
+  right: 28px;
+}
 
-    .close-btn:hover {
-      background: rgba(255, 255, 255, 0.32);
-    }
+.nav-btn.hidden {
+  display: none;
+}
 
-    .nav-btn {
-      position: fixed;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 46px;
-      height: 46px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.2);
-      color: #fff;
-      font-size: 28px;
-      line-height: 1;
-      cursor: pointer;
-      user-select: none;
-      z-index: 1001;
-    }
+@media (max-width: 900px) {
+  body {
+    padding: 20px 12px;
+  }
 
-    .nav-btn:hover {
-      background: rgba(255, 255, 255, 0.32);
-    }
+  .page {
+    flex-direction: column;
+  }
 
-    .prev-btn {
-      left: 28px;
-    }
+  .side-note {
+    width: 100%;
+  }
+}
 
-    .next-btn {
-      right: 28px;
-    }
+@media (max-width: 560px) {
+  .container {
+    padding: 24px 14px;
+  }
 
-    .nav-btn.hidden {
-      display: none;
-    }
+  h1 {
+    font-size: 26px;
+  }
 
-    @media (max-width: 900px) {
-      body {
-        padding: 20px 12px;
-      }
-
-      .page {
-        flex-direction: column;
-      }
-
-      .side-note {
-        width: 100%;
-      }
-
-      .option-panel {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-    }
-
-    @media (max-width: 560px) {
-      .container {
-        padding: 24px 14px;
-      }
-
-      h1 {
-        font-size: 26px;
-      }
-
-      .option-panel {
-        grid-template-columns: 1fr;
-      }
-
-      .result-grid {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      }
-
-      .image-card img {
-        height: 130px;
-      }
-    }
-  </style>
+  .image-card img {
+    height: 130px;
+  }
+}
+</style>
 </head>
 
 <body>
-  <div class="page">
-    <aside class="side-note">
-      <div class="side-note-title">使用说明</div>
-      本工具用于解码由 ComfyUI 插件
-      <code>comfyui-easytoolkit</code>
-      生成的 PNG 噪声隐写图。
+<div class="page">
+  <aside class="side-note">
+    <div class="side-note-title">使用说明</div>
+    上传由 ComfyUI EasyToolkit 生成的 PNG 噪声图，即可还原其中隐藏的原始图片。
 
-      正向流程：
-      <code>IMAGE → ImageSerializer → BYTES → SteganographyEncoder → PNG</code>
+    <code>支持 PNG / ZIP 批量导入</code>
+    <code>请勿使用 JPG 压缩</code>
+    <code>请勿缩放、裁剪或修改噪声图</code>
 
-      逆向流程：
-      <code>PNG 噪声图 → 读取像素 → 提取 bytes → 还原图片</code>
+    <a
+      class="repo-link"
+      href="https://github.com/muchuanhehua/noise-image-decode-tool"
+      target="_blank"
+    >
+      源码仓库
+    </a>
+  </aside>
 
-      支持导入：
-      <code>png / zip</code>
+  <main class="container">
+    <h1>噪声图隐写解码</h1>
+    <div class="author">by 木川和华</div>
 
-      注意事项：
-      <code>必须是无损 PNG</code>
-      <code>不要 JPG 压缩</code>
-      <code>不要缩放 / 裁剪 / 调色</code>
+    <label class="upload-box" id="uploadBox">
+      <input
+        id="fileInput"
+        type="file"
+        accept=".png,.zip,image/png,application/zip"
+        multiple
+      />
+      <div class="upload-title">点击或拖拽上传 PNG 噪声图 / ZIP</div>
+      <div class="upload-desc">支持批量上传，ZIP 中会自动读取 PNG 文件。</div>
+    </label>
 
-      默认参数：
-      <code>use_alpha = false</code>
-      <code>top_margin_percent = 20</code>
-      <code>bottom_margin_percent = 20</code>
+    <div class="option-row">
+      <input
+        id="fileNameInput"
+        type="text"
+        placeholder="输出文件名前缀，默认 image"
+      />
+    </div>
 
-      <a
-        class="repo-link"
-        href="https://github.com/arlozen/comfyui-easytoolkit"
-        target="_blank"
-      >
-        编码来源仓库
-      </a>
-    </aside>
+    <div class="actions">
+      <button id="selectBtn" type="button">选择文件</button>
+      <button id="clearBtn" class="secondary" type="button">清空结果</button>
+      <button id="downloadBtn" type="button" disabled>批量下载 ZIP</button>
+    </div>
 
-    <main class="container">
-      <h1>噪声图隐写解码</h1>
-      <div class="author">by 木川和华</div>
+    <div id="message" class="message">等待上传文件。</div>
 
-      <label class="upload-box" id="uploadBox">
-        <input
-          id="fileInput"
-          type="file"
-          accept=".png,.zip,image/png,application/zip"
-          multiple
-        />
-        <div class="upload-title">点击或拖拽上传 PNG 噪声图 / ZIP</div>
-        <div class="upload-desc">
-          支持批量上传。ZIP 中会自动读取 .png 文件。
-        </div>
-      </label>
+    <div id="downloadRow" class="download-row"></div>
 
-      <div class="option-panel">
-        <div class="option-item">
-          <label for="fileNameInput">输出文件名前缀</label>
-          <input id="fileNameInput" type="text" placeholder="默认 decoded" />
-        </div>
+    <div id="resultGrid" class="result-grid"></div>
+  </main>
+</div>
 
-        <div class="option-item">
-          <label for="topMarginInput">顶部留白百分比</label>
-          <input id="topMarginInput" type="number" value="20" min="0" max="99" step="0.1" />
-        </div>
+<div id="modal" class="modal">
+  <button id="closeBtn" class="close-btn" type="button">×</button>
+  <button id="prevBtn" class="nav-btn prev-btn hidden" type="button">‹</button>
+  <img id="modalImage" alt="预览" />
+  <button id="nextBtn" class="nav-btn next-btn hidden" type="button">›</button>
+</div>
 
-        <div class="option-item">
-          <label for="bottomMarginInput">底部留白百分比</label>
-          <input id="bottomMarginInput" type="number" value="20" min="0" max="99" step="0.1" />
-        </div>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
-        <div class="option-item">
-          <label>Alpha 通道</label>
-          <div class="checkbox-row">
-            <input id="useAlphaInput" type="checkbox" />
-            <span>使用 Alpha 通道解码</span>
-          </div>
-        </div>
-      </div>
+<script>
+const uploadBox = document.getElementById("uploadBox");
+const fileInput = document.getElementById("fileInput");
+const selectBtn = document.getElementById("selectBtn");
+const clearBtn = document.getElementById("clearBtn");
+const downloadBtn = document.getElementById("downloadBtn");
+const resultGrid = document.getElementById("resultGrid");
+const message = document.getElementById("message");
+const downloadRow = document.getElementById("downloadRow");
+const fileNameInput = document.getElementById("fileNameInput");
 
-      <div class="actions">
-        <button id="selectBtn" type="button">选择文件</button>
-        <button id="clearBtn" class="secondary" type="button">清空结果</button>
-        <button id="downloadBtn" type="button" disabled>批量下载 ZIP</button>
-      </div>
+const modal = document.getElementById("modal");
+const modalImage = document.getElementById("modalImage");
+const closeBtn = document.getElementById("closeBtn");
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
 
-      <div id="message" class="message">等待上传文件。</div>
+let decodedImages = [];
+let objectUrls = [];
+let currentImageIndex = 0;
 
-      <div id="downloadRow" class="download-row"></div>
+/**
+ * 固定解码参数。
+ * 对应 SteganographyEncoder 默认界面参数：
+ * use_alpha = false
+ * top_margin_percent = 20
+ * bottom_margin_percent = 20
+ */
+const DEFAULT_USE_ALPHA = false;
+const DEFAULT_TOP_MARGIN_RATIO = 0.2;
+const DEFAULT_BOTTOM_MARGIN_RATIO = 0.2;
 
-      <div id="resultGrid" class="result-grid"></div>
-    </main>
-  </div>
+selectBtn.addEventListener("click", function () {
+  fileInput.click();
+});
 
-  <div id="modal" class="modal">
-    <button id="closeBtn" class="close-btn" type="button">×</button>
-    <button id="prevBtn" class="nav-btn prev-btn hidden" type="button">‹</button>
-    <img id="modalImage" alt="预览" />
-    <button id="nextBtn" class="nav-btn next-btn hidden" type="button">›</button>
-  </div>
+fileInput.addEventListener("change", async function () {
+  await handleFiles(Array.from(fileInput.files || []));
+  fileInput.value = "";
+});
 
-  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+clearBtn.addEventListener("click", function () {
+  resetResults();
+  message.textContent = "已清空结果。";
+});
 
-  <script>
-    const uploadBox = document.getElementById("uploadBox");
-    const fileInput = document.getElementById("fileInput");
-    const selectBtn = document.getElementById("selectBtn");
-    const clearBtn = document.getElementById("clearBtn");
-    const downloadBtn = document.getElementById("downloadBtn");
-    const resultGrid = document.getElementById("resultGrid");
-    const message = document.getElementById("message");
-    const downloadRow = document.getElementById("downloadRow");
-    const fileNameInput = document.getElementById("fileNameInput");
-    const topMarginInput = document.getElementById("topMarginInput");
-    const bottomMarginInput = document.getElementById("bottomMarginInput");
-    const useAlphaInput = document.getElementById("useAlphaInput");
+downloadBtn.addEventListener("click", async function () {
+  await downloadAllAsZip();
+});
 
-    const modal = document.getElementById("modal");
-    const modalImage = document.getElementById("modalImage");
-    const closeBtn = document.getElementById("closeBtn");
-    const prevBtn = document.getElementById("prevBtn");
-    const nextBtn = document.getElementById("nextBtn");
+uploadBox.addEventListener("dragover", function (event) {
+  event.preventDefault();
+  uploadBox.classList.add("dragover");
+});
 
-    let decodedImages = [];
-    let objectUrls = [];
-    let currentImageIndex = 0;
+uploadBox.addEventListener("dragleave", function () {
+  uploadBox.classList.remove("dragover");
+});
 
-    selectBtn.addEventListener("click", function () {
-      fileInput.click();
-    });
+uploadBox.addEventListener("drop", async function (event) {
+  event.preventDefault();
+  uploadBox.classList.remove("dragover");
+  await handleFiles(Array.from(event.dataTransfer.files || []));
+});
 
-    fileInput.addEventListener("change", async function () {
-      await handleFiles(Array.from(fileInput.files || []));
-      fileInput.value = "";
-    });
+closeBtn.addEventListener("click", closeModal);
+prevBtn.addEventListener("click", showPrevImage);
+nextBtn.addEventListener("click", showNextImage);
 
-    clearBtn.addEventListener("click", function () {
-      resetResults();
-      message.textContent = "已清空结果。";
-    });
+modal.addEventListener("click", function (event) {
+  if (event.target === modal) {
+    closeModal();
+  }
+});
 
-    downloadBtn.addEventListener("click", async function () {
-      await downloadAllAsZip();
-    });
+document.addEventListener("keydown", function (event) {
+  if (!modal.classList.contains("show")) return;
 
-    uploadBox.addEventListener("dragover", function (event) {
-      event.preventDefault();
-      uploadBox.classList.add("dragover");
-    });
+  if (event.key === "Escape") {
+    closeModal();
+  } else if (event.key === "ArrowLeft") {
+    showPrevImage();
+  } else if (event.key === "ArrowRight") {
+    showNextImage();
+  }
+});
 
-    uploadBox.addEventListener("dragleave", function () {
-      uploadBox.classList.remove("dragover");
-    });
+async function handleFiles(files) {
+  if (!files.length) return;
 
-    uploadBox.addEventListener("drop", async function (event) {
-      event.preventDefault();
-      uploadBox.classList.remove("dragover");
-      const files = Array.from(event.dataTransfer.files || []);
-      await handleFiles(files);
-    });
+  resetResults();
 
-    closeBtn.addEventListener("click", closeModal);
-    prevBtn.addEventListener("click", showPrevImage);
-    nextBtn.addEventListener("click", showNextImage);
+  const pngFiles = [];
 
-    modal.addEventListener("click", function (event) {
-      if (event.target === modal) {
-        closeModal();
+  for (const file of files) {
+    if (isZipFile(file)) {
+      try {
+        const extracted = await extractPngFilesFromZip(file);
+        pngFiles.push(...extracted);
+      } catch (error) {
+        console.error(error);
+        appendMessage("ZIP 读取失败：" + file.name);
       }
-    });
-
-    document.addEventListener("keydown", function (event) {
-      if (!modal.classList.contains("show")) return;
-
-      if (event.key === "Escape") {
-        closeModal();
-      } else if (event.key === "ArrowLeft") {
-        showPrevImage();
-      } else if (event.key === "ArrowRight") {
-        showNextImage();
-      }
-    });
-
-    async function handleFiles(files) {
-      if (!files.length) return;
-
-      resetResults();
-
-      const pngFiles = [];
-
-      for (const file of files) {
-        if (isZipFile(file)) {
-          try {
-            const extracted = await extractPngFilesFromZip(file);
-            pngFiles.push(...extracted);
-          } catch (error) {
-            console.error(error);
-            appendMessage(`ZIP 读取失败：${file.name}`);
-          }
-        } else if (isPngFile(file)) {
-          pngFiles.push(file);
-        } else {
-          appendMessage(`已跳过非 PNG/ZIP 文件：${file.name}`);
-        }
-      }
-
-      if (!pngFiles.length) {
-        message.textContent = "没有找到可处理的 PNG 文件。";
-        return;
-      }
-
-      const options = getDecodeOptions();
-      const prefix = getFilePrefix();
-      const dateText = getCurrentDateText();
-
-      let successCount = 0;
-      let failCount = 0;
-
-      for (let i = 0; i < pngFiles.length; i++) {
-        const file = pngFiles[i];
-
-        try {
-          message.textContent = `正在解码 ${i + 1}/${pngFiles.length}：${file.name}`;
-
-          const decoded = await decodeNoisePngFile(file, options);
-          const outputIndex = successCount + 1;
-          const outputName = `${prefix}_${dateText}_${formatNumber(outputIndex)}.${decoded.ext}`;
-
-          const url = URL.createObjectURL(decoded.blob);
-          objectUrls.push(url);
-
-          const item = {
-            blob: decoded.blob,
-            bytes: decoded.bytes,
-            url,
-            name: outputName,
-            sourceName: file.name,
-            mime: decoded.mime,
-            size: decoded.bytes.length
-          };
-
-          decodedImages.push(item);
-          renderImageCard(item, decodedImages.length - 1);
-
-          successCount++;
-        } catch (error) {
-          console.error(error);
-          failCount++;
-          appendMessage(`解码失败：${file.name}\n${error.message}`);
-        }
-      }
-
-      if (successCount > 0) {
-        downloadBtn.disabled = false;
-        downloadRow.style.display = "block";
-      }
-
-      message.textContent =
-        `处理完成。\n成功：${successCount} 张\n失败：${failCount} 张`;
+    } else if (isPngFile(file)) {
+      pngFiles.push(file);
+    } else {
+      appendMessage("已跳过非 PNG/ZIP 文件：" + file.name);
     }
+  }
 
-    async function decodeNoisePngFile(file, options) {
-      const imageData = await readPngToImageData(file);
+  if (!pngFiles.length) {
+    message.textContent = "没有找到可处理的 PNG 文件。";
+    return;
+  }
 
-      const payload = decodeSteganography(imageData, {
-        useAlpha: options.useAlpha,
-        topMarginRatio: options.topMarginPercent / 100,
-        bottomMarginRatio: options.bottomMarginPercent / 100
-      });
+  const prefix = getFilePrefix();
+  const dateText = getCurrentDateText();
 
-      const unwrapped = unwrapPossibleResourcePayload(payload);
-      const mime = detectImageMime(unwrapped);
-      const ext = getExtensionFromMime(mime);
+  let successCount = 0;
+  let failCount = 0;
 
-      if (mime === "application/octet-stream") {
-        throw new Error("已提取 bytes，但无法识别为 PNG/JPEG/WebP/GIF 图片。请检查参数是否正确。");
-      }
+  for (let i = 0; i < pngFiles.length; i++) {
+    const file = pngFiles[i];
 
-      const blob = new Blob([unwrapped], { type: mime });
+    try {
+      message.textContent = `正在解码 ${i + 1}/${pngFiles.length}：${file.name}`;
 
-      return {
-        blob,
-        bytes: unwrapped,
-        mime,
-        ext
-      };
-    }
+      const decoded = await decodeNoisePngFile(file);
+      const outputIndex = successCount + 1;
+      const outputName = `${prefix}_${dateText}_${formatNumber(outputIndex)}.${decoded.ext}`;
 
-    function decodeSteganography(imageData, options = {}) {
-      const useAlpha = options.useAlpha ?? false;
-      const topMarginRatio = options.topMarginRatio ?? 0.2;
-      const bottomMarginRatio = options.bottomMarginRatio ?? 0.2;
-
-      if (topMarginRatio < 0 || topMarginRatio > 1) {
-        throw new Error("顶部留白比例必须在 0 到 1 之间。");
-      }
-
-      if (bottomMarginRatio < 0 || bottomMarginRatio > 1) {
-        throw new Error("底部留白比例必须在 0 到 1 之间。");
-      }
-
-      if (topMarginRatio + bottomMarginRatio >= 1) {
-        throw new Error("顶部留白与底部留白之和必须小于 100%。");
-      }
-
-      const width = imageData.width;
-      const height = imageData.height;
-      const rgba = imageData.data;
-
-      const channels = useAlpha ? 4 : 3;
-      const flattened = new Uint8Array(width * height * channels);
-
-      let writeIndex = 0;
-
-      for (let i = 0; i < rgba.length; i += 4) {
-        flattened[writeIndex++] = rgba[i];
-        flattened[writeIndex++] = rgba[i + 1];
-        flattened[writeIndex++] = rgba[i + 2];
-
-        if (useAlpha) {
-          flattened[writeIndex++] = rgba[i + 3];
-        }
-      }
-
-      const topMarginRows = Math.floor(height * topMarginRatio);
-      const bottomMarginRows = Math.floor(height * bottomMarginRatio);
-      const availableRows = height - topMarginRows - bottomMarginRows;
-
-      const topMarginBytes = topMarginRows * width * channels;
-      const dataAreaBytes = availableRows * width * channels;
-
-      const dataAreaStart = topMarginBytes;
-      const dataAreaEnd = topMarginBytes + dataAreaBytes;
-
-      if (dataAreaEnd > flattened.length) {
-        throw new Error("数据区域越界。");
-      }
-
-      const dataArea = flattened.slice(dataAreaStart, dataAreaEnd);
-
-      if (dataArea.length < 4) {
-        throw new Error("数据区域过小，无法读取长度头。");
-      }
-
-      const dataLength =
-        (
-          (dataArea[0] << 24) |
-          (dataArea[1] << 16) |
-          (dataArea[2] << 8) |
-          dataArea[3]
-        ) >>> 0;
-
-      if (dataLength > dataArea.length - 4) {
-        throw new Error(
-          `无效的数据长度：${dataLength}。请检查 use_alpha 和上下留白参数。`
-        );
-      }
-
-      return dataArea.slice(4, 4 + dataLength);
-    }
-
-    async function readPngToImageData(file) {
-      const bitmap = await createImageBitmap(file);
-
-      const canvas = document.createElement("canvas");
-      canvas.width = bitmap.width;
-      canvas.height = bitmap.height;
-
-      const ctx = canvas.getContext("2d", {
-        willReadFrequently: true
-      });
-
-      ctx.drawImage(bitmap, 0, 0);
-
-      return ctx.getImageData(0, 0, canvas.width, canvas.height);
-    }
-
-    function unwrapPossibleResourcePayload(bytes) {
-      if (detectImageMime(bytes) !== "application/octet-stream") {
-        return bytes;
-      }
-
-      if (bytes.length < 8) {
-        return bytes;
-      }
-
-      const compressionMode = bytes[1];
-      const serializationFormat = bytes[2];
-
-      if (compressionMode !== 0) {
-        return bytes;
-      }
-
-      const body = bytes.slice(4);
-
-      if (serializationFormat === 1) {
-        const parts = splitBytesWithHeaders(body);
-
-        for (const part of parts) {
-          if (detectImageMime(part) !== "application/octet-stream") {
-            return part;
-          }
-        }
-
-        return bytes;
-      }
-
-      if (serializationFormat === 0) {
-        if (detectImageMime(body) !== "application/octet-stream") {
-          return body;
-        }
-      }
-
-      return bytes;
-    }
-
-    function splitBytesWithHeaders(mergedBytes) {
-      const list = [];
-      let offset = 0;
-      const totalLength = mergedBytes.length;
-
-      while (offset < totalLength) {
-        if (offset + 4 > totalLength) {
-          break;
-        }
-
-        const size =
-          (
-            (mergedBytes[offset] << 24) |
-            (mergedBytes[offset + 1] << 16) |
-            (mergedBytes[offset + 2] << 8) |
-            mergedBytes[offset + 3]
-          ) >>> 0;
-
-        offset += 4;
-
-        if (offset + size > totalLength) {
-          break;
-        }
-
-        list.push(mergedBytes.slice(offset, offset + size));
-        offset += size;
-      }
-
-      return list;
-    }
-
-    function detectImageMime(bytes) {
-      if (!bytes || bytes.length < 4) {
-        return "application/octet-stream";
-      }
-
-      if (
-        bytes[0] === 0x89 &&
-        bytes[1] === 0x50 &&
-        bytes[2] === 0x4e &&
-        bytes[3] === 0x47
-      ) {
-        return "image/png";
-      }
-
-      if (bytes[0] === 0xff && bytes[1] === 0xd8) {
-        return "image/jpeg";
-      }
-
-      if (
-        bytes.length >= 12 &&
-        bytes[0] === 0x52 &&
-        bytes[1] === 0x49 &&
-        bytes[2] === 0x46 &&
-        bytes[3] === 0x46 &&
-        bytes[8] === 0x57 &&
-        bytes[9] === 0x45 &&
-        bytes[10] === 0x42 &&
-        bytes[11] === 0x50
-      ) {
-        return "image/webp";
-      }
-
-      if (
-        bytes[0] === 0x47 &&
-        bytes[1] === 0x49 &&
-        bytes[2] === 0x46
-      ) {
-        return "image/gif";
-      }
-
-      return "application/octet-stream";
-    }
-
-    function getExtensionFromMime(mime) {
-      switch (mime) {
-        case "image/png":
-          return "png";
-        case "image/jpeg":
-          return "jpg";
-        case "image/webp":
-          return "webp";
-        case "image/gif":
-          return "gif";
-        default:
-          return "bin";
-      }
-    }
-
-    function renderImageCard(item, index) {
-      const card = document.createElement("div");
-      card.className = "image-card";
-
-      const img = document.createElement("img");
-      img.src = item.url;
-      img.alt = item.name;
-      img.addEventListener("click", function () {
-        openModal(index);
-      });
-
-      const name = document.createElement("div");
-      name.className = "image-name";
-      name.textContent = item.name;
-
-      const meta = document.createElement("div");
-      meta.className = "image-meta";
-      meta.textContent = `${item.mime} / ${formatFileSize(item.size)}`;
-
-      const source = document.createElement("div");
-      source.className = "image-meta";
-      source.textContent = `来源：${item.sourceName}`;
-
-      const actions = document.createElement("div");
-      actions.className = "card-actions";
-
-      const downloadLink = document.createElement("a");
-      downloadLink.href = item.url;
-      downloadLink.download = item.name;
-      downloadLink.textContent = "下载";
-
-      actions.appendChild(downloadLink);
-
-      card.appendChild(img);
-      card.appendChild(name);
-      card.appendChild(meta);
-      card.appendChild(source);
-      card.appendChild(actions);
-
-      resultGrid.appendChild(card);
-    }
-
-    async function extractPngFilesFromZip(file) {
-      const zip = await JSZip.loadAsync(file);
-      const result = [];
-
-      const entries = Object.values(zip.files);
-
-      for (const entry of entries) {
-        if (entry.dir) continue;
-
-        if (!entry.name.toLowerCase().endsWith(".png")) {
-          continue;
-        }
-
-        const blob = await entry.async("blob");
-        const extractedFile = new File([blob], entry.name.split("/").pop(), {
-          type: "image/png"
-        });
-
-        result.push(extractedFile);
-      }
-
-      return result;
-    }
-
-    async function downloadAllAsZip() {
-      if (!decodedImages.length) return;
-
-      const zip = new JSZip();
-
-      for (const item of decodedImages) {
-        zip.file(item.name, item.blob);
-      }
-
-      message.textContent = "正在生成 ZIP...";
-
-      const content = await zip.generateAsync({
-        type: "blob",
-        compression: "DEFLATE"
-      });
-
-      const prefix = getFilePrefix();
-      const dateText = getCurrentDateText();
-      const zipName = `${prefix}_${dateText}_${formatNumber(1)}-${formatNumber(decodedImages.length)}.zip`;
-
-      const url = URL.createObjectURL(content);
+      const url = URL.createObjectURL(decoded.blob);
       objectUrls.push(url);
 
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = zipName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      message.textContent = `ZIP 已生成：${zipName}`;
-    }
-
-    function openModal(index) {
-      if (!decodedImages[index]) return;
-
-      currentImageIndex = index;
-      modalImage.src = decodedImages[index].url;
-      modal.classList.add("show");
-
-      updateModalNav();
-    }
-
-    function closeModal() {
-      modal.classList.remove("show");
-      modalImage.removeAttribute("src");
-    }
-
-    function showPrevImage() {
-      if (decodedImages.length <= 1) return;
-
-      currentImageIndex =
-        (currentImageIndex - 1 + decodedImages.length) % decodedImages.length;
-
-      modalImage.src = decodedImages[currentImageIndex].url;
-      updateModalNav();
-    }
-
-    function showNextImage() {
-      if (decodedImages.length <= 1) return;
-
-      currentImageIndex =
-        (currentImageIndex + 1) % decodedImages.length;
-
-      modalImage.src = decodedImages[currentImageIndex].url;
-      updateModalNav();
-    }
-
-    function updateModalNav() {
-      if (decodedImages.length <= 1) {
-        prevBtn.classList.add("hidden");
-        nextBtn.classList.add("hidden");
-      } else {
-        prevBtn.classList.remove("hidden");
-        nextBtn.classList.remove("hidden");
-      }
-    }
-
-    function resetResults() {
-      resultGrid.innerHTML = "";
-      decodedImages = [];
-      currentImageIndex = 0;
-      downloadRow.style.display = "none";
-      downloadBtn.disabled = true;
-
-      objectUrls.forEach(function (url) {
-        URL.revokeObjectURL(url);
-      });
-
-      objectUrls = [];
-      message.textContent = "正在处理...";
-    }
-
-    function getDecodeOptions() {
-      const topMarginPercent = Number(topMarginInput.value || 20);
-      const bottomMarginPercent = Number(bottomMarginInput.value || 20);
-      const useAlpha = useAlphaInput.checked;
-
-      return {
-        topMarginPercent,
-        bottomMarginPercent,
-        useAlpha
+      const item = {
+        blob: decoded.blob,
+        bytes: decoded.bytes,
+        url,
+        name: outputName,
+        sourceName: file.name,
+        mime: decoded.mime,
+        size: decoded.bytes.length
       };
+
+      decodedImages.push(item);
+      renderImageCard(item, decodedImages.length - 1);
+
+      successCount++;
+    } catch (error) {
+      console.error(error);
+      failCount++;
+      appendMessage(`解码失败：${file.name}\n${error.message}`);
     }
+  }
 
-    function getFilePrefix() {
-      const value = fileNameInput.value.trim();
-      return value || "decoded";
+  if (successCount > 0) {
+    downloadBtn.disabled = false;
+    downloadRow.style.display = "block";
+  }
+
+  message.textContent =
+    `处理完成。\n成功：${successCount} 张\n失败：${failCount} 张`;
+}
+
+async function decodeNoisePngFile(file) {
+  const imageData = await readPngToImageData(file);
+
+  const payload = decodeSteganography(imageData);
+
+  const mime = detectImageMime(payload);
+  const ext = getExtensionFromMime(mime);
+
+  if (mime === "application/octet-stream") {
+    throw new Error("无法识别隐藏数据为图片，请确认上传的是原始 PNG 噪声图。");
+  }
+
+  const blob = new Blob([payload], { type: mime });
+
+  return {
+    blob,
+    bytes: payload,
+    mime,
+    ext
+  };
+}
+
+function decodeSteganography(imageData) {
+  const useAlpha = DEFAULT_USE_ALPHA;
+  const topMarginRatio = DEFAULT_TOP_MARGIN_RATIO;
+  const bottomMarginRatio = DEFAULT_BOTTOM_MARGIN_RATIO;
+
+  const width = imageData.width;
+  const height = imageData.height;
+  const rgba = imageData.data;
+
+  const channels = useAlpha ? 4 : 3;
+  const flattened = new Uint8Array(width * height * channels);
+
+  let writeIndex = 0;
+
+  for (let i = 0; i < rgba.length; i += 4) {
+    flattened[writeIndex++] = rgba[i];
+    flattened[writeIndex++] = rgba[i + 1];
+    flattened[writeIndex++] = rgba[i + 2];
+
+    if (useAlpha) {
+      flattened[writeIndex++] = rgba[i + 3];
     }
+  }
 
-    function getCurrentDateText() {
-      const date = new Date();
-      const y = date.getFullYear();
-      const m = String(date.getMonth() + 1).padStart(2, "0");
-      const d = String(date.getDate()).padStart(2, "0");
-      return `${y}${m}${d}`;
-    }
+  const topMarginRows = Math.floor(height * topMarginRatio);
+  const bottomMarginRows = Math.floor(height * bottomMarginRatio);
+  const availableRows = height - topMarginRows - bottomMarginRows;
 
-    function formatNumber(num) {
-      return String(num).padStart(3, "0");
-    }
+  if (availableRows <= 0) {
+    throw new Error("PNG 尺寸异常，无法定位隐藏数据区域。");
+  }
 
-    function formatFileSize(size) {
-      if (size < 1024) {
-        return `${size} B`;
-      }
+  const topMarginBytes = topMarginRows * width * channels;
+  const dataAreaBytes = availableRows * width * channels;
 
-      if (size < 1024 * 1024) {
-        return `${(size / 1024).toFixed(2)} KB`;
-      }
+  const dataAreaStart = topMarginBytes;
+  const dataAreaEnd = dataAreaStart + dataAreaBytes;
 
-      return `${(size / 1024 / 1024).toFixed(2)} MB`;
-    }
+  const dataArea = flattened.slice(dataAreaStart, dataAreaEnd);
 
-    function isPngFile(file) {
-      return (
-        file.type === "image/png" ||
-        file.name.toLowerCase().endsWith(".png")
-      );
-    }
+  if (dataArea.length < 4) {
+    throw new Error("数据区域过小，无法读取长度头。");
+  }
 
-    function isZipFile(file) {
-      return (
-        file.type === "application/zip" ||
-        file.type === "application/x-zip-compressed" ||
-        file.name.toLowerCase().endsWith(".zip")
-      );
-    }
+  const dataLength =
+    (
+      (dataArea[0] << 24) |
+      (dataArea[1] << 16) |
+      (dataArea[2] << 8) |
+      dataArea[3]
+    ) >>> 0;
 
-    function appendMessage(text) {
-      if (!message.textContent || message.textContent === "正在处理...") {
-        message.textContent = text;
-      } else {
-        message.textContent += "\n" + text;
-      }
-    }
-  </script>
+  if (dataLength <= 0 || dataLength > dataArea.length - 4) {
+    throw new Error("隐藏数据长度无效，请确认 PNG 未被压缩或修改。");
+  }
+
+  return dataArea.slice(4, 4 + dataLength);
+}
+
+async function readPngToImageData(file) {
+  const bitmap = await createImageBitmap(file);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+
+  const ctx = canvas.getContext("2d", {
+    willReadFrequently: true
+  });
+
+  ctx.drawImage(bitmap, 0, 0);
+
+  return ctx.getImageData(0, 0, canvas.width, canvas.height);
+}
+
+function detectImageMime(bytes) {
+  if (!bytes || bytes.length < 4) {
+    return "application/octet-stream";
+  }
+
+  if (
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4e &&
+    bytes[3] === 0x47
+  ) {
+    return "image/png";
+  }
+
+  if (bytes[0] === 0xff && bytes[1] === 0xd8) {
+    return "image/jpeg";
+  }
+
+  if (
+    bytes.length >= 12 &&
+    bytes[0] === 0x52 &&
+    bytes[1] === 0x49 &&
+    bytes[2] === 0x46 &&
+    bytes[3] === 0x46 &&
+    bytes[8] === 0x57 &&
+    bytes[9] === 0x45 &&
+    bytes[10] === 0x42 &&
+    bytes[11] === 0x50
+  ) {
+    return "image/webp";
+  }
+
+  if (
+    bytes[0] === 0x47 &&
+    bytes[1] === 0x49 &&
+    bytes[2] === 0x46
+  ) {
+    return "image/gif";
+  }
+
+  return "application/octet-stream";
+}
+
+function getExtensionFromMime(mime) {
+  if (mime === "image/png") return "png";
+  if (mime === "image/jpeg") return "jpg";
+  if (mime === "image/webp") return "webp";
+  if (mime === "image/gif") return "gif";
+  return "bin";
+}
+
+function renderImageCard(item, index) {
+  const card = document.createElement("div");
+  card.className = "image-card";
+
+  const img = document.createElement("img");
+  img.src = item.url;
+  img.alt = item.name;
+  img.addEventListener("click", function () {
+    openModal(index);
+  });
+
+  const name = document.createElement("div");
+  name.className = "image-name";
+  name.textContent = item.name;
+
+  const meta = document.createElement("div");
+  meta.className = "image-meta";
+  meta.textContent = `${item.mime} / ${formatFileSize(item.size)}`;
+
+  const source = document.createElement("div");
+  source.className = "image-meta";
+  source.textContent = `来源：${item.sourceName}`;
+
+  const actions = document.createElement("div");
+  actions.className = "card-actions";
+
+  const downloadLink = document.createElement("a");
+  downloadLink.href = item.url;
+  downloadLink.download = item.name;
+  downloadLink.textContent = "下载";
+
+  actions.appendChild(downloadLink);
+
+  card.appendChild(img);
+  card.appendChild(name);
+  card.appendChild(meta);
+  card.appendChild(source);
+  card.appendChild(actions);
+
+  resultGrid.appendChild(card);
+}
+
+async function extractPngFilesFromZip(file) {
+  const zip = await JSZip.loadAsync(file);
+  const result = [];
+
+  const entries = Object.values(zip.files);
+
+  for (const entry of entries) {
+    if (entry.dir) continue;
+    if (!entry.name.toLowerCase().endsWith(".png")) continue;
+
+    const blob = await entry.async("blob");
+    const extractedFile = new File([blob], entry.name.split("/").pop(), {
+      type: "image/png"
+    });
+
+    result.push(extractedFile);
+  }
+
+  return result;
+}
+
+async function downloadAllAsZip() {
+  if (!decodedImages.length) return;
+
+  const zip = new JSZip();
+
+  for (const item of decodedImages) {
+    zip.file(item.name, item.blob);
+  }
+
+  message.textContent = "正在生成 ZIP...";
+
+  const content = await zip.generateAsync({
+    type: "blob",
+    compression: "DEFLATE"
+  });
+
+  const prefix = getFilePrefix();
+  const dateText = getCurrentDateText();
+  const zipName = `${prefix}_${dateText}_${formatNumber(1)}-${formatNumber(decodedImages.length)}.zip`;
+
+  const url = URL.createObjectURL(content);
+  objectUrls.push(url);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = zipName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  message.textContent = `ZIP 已生成：${zipName}`;
+}
+
+function openModal(index) {
+  if (!decodedImages[index]) return;
+
+  currentImageIndex = index;
+  modalImage.src = decodedImages[index].url;
+  modal.classList.add("show");
+
+  updateModalNav();
+}
+
+function closeModal() {
+  modal.classList.remove("show");
+  modalImage.removeAttribute("src");
+}
+
+function showPrevImage() {
+  if (decodedImages.length <= 1) return;
+
+  currentImageIndex =
+    (currentImageIndex - 1 + decodedImages.length) % decodedImages.length;
+
+  modalImage.src = decodedImages[currentImageIndex].url;
+  updateModalNav();
+}
+
+function showNextImage() {
+  if (decodedImages.length <= 1) return;
+
+  currentImageIndex =
+    (currentImageIndex + 1) % decodedImages.length;
+
+  modalImage.src = decodedImages[currentImageIndex].url;
+  updateModalNav();
+}
+
+function updateModalNav() {
+  if (decodedImages.length <= 1) {
+    prevBtn.classList.add("hidden");
+    nextBtn.classList.add("hidden");
+  } else {
+    prevBtn.classList.remove("hidden");
+    nextBtn.classList.remove("hidden");
+  }
+}
+
+function resetResults() {
+  resultGrid.innerHTML = "";
+  decodedImages = [];
+  currentImageIndex = 0;
+  downloadRow.style.display = "none";
+  downloadBtn.disabled = true;
+
+  objectUrls.forEach(function (url) {
+    URL.revokeObjectURL(url);
+  });
+
+  objectUrls = [];
+  message.textContent = "正在处理...";
+}
+
+function getFilePrefix() {
+  const value = fileNameInput.value.trim();
+  return value || "image";
+}
+
+function getCurrentDateText() {
+  const date = new Date();
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}${m}${d}`;
+}
+
+function formatNumber(num) {
+  return String(num).padStart(3, "0");
+}
+
+function formatFileSize(size) {
+  if (size < 1024) {
+    return `${size} B`;
+  }
+
+  if (size < 1024 * 1024) {
+    return `${(size / 1024).toFixed(2)} KB`;
+  }
+
+  return `${(size / 1024 / 1024).toFixed(2)} MB`;
+}
+
+function isPngFile(file) {
+  return (
+    file.type === "image/png" ||
+    file.name.toLowerCase().endsWith(".png")
+  );
+}
+
+function isZipFile(file) {
+  return (
+    file.type === "application/zip" ||
+    file.type === "application/x-zip-compressed" ||
+    file.name.toLowerCase().endsWith(".zip")
+  );
+}
+
+function appendMessage(text) {
+  if (!message.textContent || message.textContent === "正在处理...") {
+    message.textContent = text;
+  } else {
+    message.textContent += "\n" + text;
+  }
+}
+</script>
 </body>
 </html>
