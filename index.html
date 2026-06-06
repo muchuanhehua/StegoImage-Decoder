@@ -84,13 +84,13 @@ h1 {
   line-height: 1.3;
 }
 
-。author {
+.author {
   margin: 8px 0 28px;
   color: #666;
   font-size: 15px;
 }
 
-  。title-repo-link {
+.title-repo-link {
   margin-left: 8px;
   color: #2563eb;
   text-decoration: none;
@@ -119,7 +119,7 @@ h1 {
   background: #eff6ff;
 }
 
-。upload-box input {
+.upload-box input {
   display: none;
 }
 
@@ -129,7 +129,7 @@ h1 {
   margin-bottom: 10px;
 }
 
-。upload-desc {
+.upload-desc {
   color: #666;
   font-size: 13px;
   line-height: 1.7;
@@ -164,7 +164,7 @@ h1 {
   flex-wrap: wrap;
 }
 
-button,
+button，
 .button-link {
   border: none;
   border-radius: 8px;
@@ -185,7 +185,7 @@ button:hover,
   background: #1d4ed8;
 }
 
-button.secondary {
+buttonsecondary {
   background: #6b7280;
 }
 
@@ -368,7 +368,7 @@ button:disabled {
 }
 
 @media (max-width: 600px) {
-  。container {
+  .container {
     padding: 26px 14px;
   }
 
@@ -410,7 +410,7 @@ button:disabled {
 <div class="page">
   <aside class="side-note">
     <div class="side-note-title">使用说明</div>
-    一个用于处理 PNG 噪声隐写图的纯前端网页工具。
+    一个用于处理 PNG 噪声隐写图的纯前端网页工具.
 
     <code>支持 PNG / ZIP 批量导入</code>
     <code>本地解码，不上传文件</code>
@@ -439,7 +439,7 @@ button:disabled {
       />
       <div class="upload-title">点击或拖拽上传 PNG 噪声图 / ZIP</div>
       <div class="upload-desc">
-        支持批量上传，ZIP 中会自动读取 PNG 文件。
+        支持批量上传，ZIP 中会自动读取 PNG 文件.
       </div>
     </label>
 
@@ -458,7 +458,7 @@ button:disabled {
       <button id="downloadBtn" type="button" disabled>批量下载 ZIP</button>
     </div>
 
-    <div id="message" class="message">等待上传文件。</div>
+    <div id="message" class="message">等待上传文件.</div>
 
     <div id="downloadRow" class="download-row"></div>
 
@@ -480,7 +480,7 @@ const uploadBox = document.getElementById("uploadBox");
 const fileInput = document.getElementById("fileInput");
 const selectBtn = document.getElementById("selectBtn");
 const clearBtn = document.getElementById("clearBtn");
-const downloadBtn = document。getElementById("downloadBtn");
+const downloadBtn = document.getElementById("downloadBtn");
 const resultGrid = document.getElementById("resultGrid");
 const message = document.getElementById("message");
 const downloadRow = document.getElementById("downloadRow");
@@ -497,7 +497,7 @@ let objectUrls = [];
 let currentImageIndex = 0;
 
 /**
- * 固定解码参数。
+ * 固定解码参数.
  * 对应 EasyToolkit SteganographyEncoder 默认输入：
  * use_alpha = false
  * top_margin_percent = 20
@@ -518,10 +518,10 @@ fileInput.addEventListener("change", async function () {
 
 clearBtn.addEventListener("click", function () {
   resetResults();
-  message.textContent = "已清空结果。";
+  message.textContent = "已清空结果.";
 });
 
-downloadBtn。addEventListener("click", async function () {
+downloadBtn.addEventListener("click", async function () {
   await downloadAllAsZip();
 });
 
@@ -586,7 +586,7 @@ async function handleFiles(files) {
   }
 
   if (!pngFiles.length) {
-    message.textContent = "没有找到可处理的 PNG 文件。";
+    message.textContent = "没有找到可处理的 PNG 文件.";
     return;
   }
 
@@ -636,7 +636,7 @@ async function handleFiles(files) {
     downloadRow.style.display = "block";
   }
 
-  let finalMessage = `处理完成。\n成功：${successCount} 张\n失败：${failCount} 张`;
+  let finalMessage = `处理完成.\n成功：${successCount} 张\n失败：${failCount} 张`;
 
   if (failMessages.length) {
     finalMessage += "\n\n" + failMessages.join("\n\n");
@@ -654,7 +654,7 @@ async function decodeNoisePngFile(file) {
   const ext = getExtensionFromMime(mime);
 
   if (mime === "application/octet-stream") {
-    throw new Error("无法识别隐藏数据为图片，请确认上传的是原始 PNG 噪声图。");
+    throw new Error("无法识别隐藏数据为图片，请确认上传的是原始 PNG 噪声图.");
   }
 
   const blob = new Blob([imageBytes], { type: mime });
@@ -682,8 +682,8 @@ function decodeSteganography(imageData) {
   let writeIndex = 0;
 
   /**
-   * Canvas 读取出的 ImageData 永远是 RGBA。
-   * 但 EasyToolkit 默认 use_alpha=false，所以这里按 RGB 展平。
+   * Canvas 读取出的 ImageData 永远是 RGBA.
+   * 但 EasyToolkit 默认 use_alpha=false，所以这里按 RGB 展平.
    */
   for (let i = 0; i < rgba.length; i += 4) {
     flattened[writeIndex++] = rgba[i];
@@ -700,7 +700,7 @@ function decodeSteganography(imageData) {
   const availableRows = height - topMarginRows - bottomMarginRows;
 
   if (availableRows <= 0) {
-    throw new Error("PNG 尺寸异常，无法定位隐藏数据区域。");
+    throw new Error("PNG 尺寸异常，无法定位隐藏数据区域.");
   }
 
   const topMarginBytes = topMarginRows * width * channels;
@@ -710,13 +710,13 @@ function decodeSteganography(imageData) {
   const dataAreaEnd = dataAreaStart + dataAreaBytes;
 
   if (dataAreaEnd > flattened.length) {
-    throw new Error("数据区域越界。");
+    throw new Error("数据区域越界.");
   }
 
   const dataArea = flattened.slice(dataAreaStart, dataAreaEnd);
 
   if (dataArea.length < 4) {
-    throw new Error("数据区域过小，无法读取长度头。");
+    throw new Error("数据区域过小，无法读取长度头.");
   }
 
   /**
@@ -732,7 +732,7 @@ function decodeSteganography(imageData) {
     ) >>> 0;
 
   if (dataLength <= 0 || dataLength > dataArea.length - 4) {
-    throw new Error("隐藏数据长度无效，请确认 PNG 未被压缩、缩放、裁剪或修改。");
+    throw new Error("隐藏数据长度无效，请确认 PNG 未被压缩、缩放、裁剪或修改.");
   }
 
   return dataArea.slice(4, 4 + dataLength);
@@ -783,7 +783,7 @@ function unwrapPossibleResourcePayload(bytes) {
   }
 
   if (compressionMode === 1) {
-    throw new Error("隐藏数据使用了 zlib 压缩，当前网页未启用 zlib 解压。");
+    throw new Error("隐藏数据使用了 zlib 压缩，当前网页未启用 zlib 解压.");
   }
 
   const body = bytes.slice(4);
