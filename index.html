@@ -5,17 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>隐图解码器 / StegoImage Decoder by 木川和华</title>
 
+<link rel="icon" href="./favicon.ico?v=1" type="image/x-icon" />
+<link rel="shortcut icon" href="./favicon.ico?v=1" type="image/x-icon" />
+
 <style>
 * {
   box-sizing: border-box;
 }
 
+html {
+  min-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
 body {
+  min-height: 100%;
   margin: 0;
   padding: 40px 16px;
   font-family: Arial, "Microsoft YaHei", sans-serif;
   background: #f5f5f5;
   color: #222;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .page {
@@ -130,7 +142,7 @@ h1 {
   justify-content: center;
 }
 
-.option-row input {
+.name-input {
   width: 340px;
   max-width: 100%;
   height: 44px;
@@ -141,7 +153,7 @@ h1 {
   outline: none;
 }
 
-.option-row input:focus {
+.name-input:focus {
   border-color: #2563eb;
 }
 
@@ -345,22 +357,51 @@ button:disabled {
     flex-direction: column;
   }
 
+  .container {
+    width: 100%;
+    order: 1;
+  }
+
   .side-note {
     width: 100%;
+    order: 2;
   }
 }
 
-@media (max-width: 560px) {
+@media (max-width: 600px) {
   .container {
-    padding: 24px 14px;
+    padding: 26px 14px;
   }
 
   h1 {
     font-size: 26px;
   }
 
+  .upload-box {
+    padding: 28px 14px;
+  }
+
+  .name-input {
+    width: 100%;
+    max-width: 260px;
+  }
+
   .image-card img {
     height: 130px;
+  }
+
+  .nav-btn {
+    width: 40px;
+    height: 56px;
+    font-size: 38px;
+  }
+
+  .prev-btn {
+    left: 10px;
+  }
+
+  .next-btn {
+    right: 10px;
   }
 }
 </style>
@@ -405,6 +446,7 @@ button:disabled {
     <div class="option-row">
       <input
         id="fileNameInput"
+        class="name-input"
         type="text"
         placeholder="输出文件名前缀，默认 image"
       />
@@ -456,13 +498,10 @@ let currentImageIndex = 0;
 
 /**
  * 固定解码参数。
- * 对应 ComfyUI EasyToolkit 的 SteganographyEncoder 默认参数：
+ * 对应 EasyToolkit SteganographyEncoder 默认输入：
  * use_alpha = false
  * top_margin_percent = 20
  * bottom_margin_percent = 20
- *
- * 按你的使用流程，PNG 一旦生成就是固定结果，
- * 因此前端不暴露这些参数。
  */
 const DEFAULT_USE_ALPHA = false;
 const DEFAULT_TOP_MARGIN_RATIO = 0.2;
@@ -556,6 +595,7 @@ async function handleFiles(files) {
 
   let successCount = 0;
   let failCount = 0;
+  const failMessages = [];
 
   for (let i = 0; i < pngFiles.length; i++) {
     const file = pngFiles[i];
@@ -587,7 +627,7 @@ async function handleFiles(files) {
     } catch (error) {
       console.error(error);
       failCount++;
-      appendMessage(`解码失败：${file.name}\n${error.message}`);
+      failMessages.push(`解码失败：${file.name}\n${error.message}`);
     }
   }
 
@@ -596,24 +636,18 @@ async function handleFiles(files) {
     downloadRow.style.display = "block";
   }
 
-  message.textContent =
-    `处理完成。\n成功：${successCount} 张\n失败：${failCount} 张`;
+  let finalMessage = `处理完成。\n成功：${successCount} 张\n失败：${failCount} 张`;
+
+  if (failMessages.length) {
+    finalMessage += "\n\n" + failMessages.join("\n\n");
+  }
+
+  message.textContent = finalMessage;
 }
 
 async function decodeNoisePngFile(file) {
   const imageData = await readPngToImageData(file);
   const payload = decodeSteganography(imageData);
-
-  /**
-   * 兼容 ResourceHeader：
-   * [4-byte resource header][body]
-   *
-   * Header:
-   * Byte 0: resource format number
-   * Byte 1: compression mode, 0=no_compression, 1=zlib_compression
-   * Byte 2: serialization format, 0=none, 1=bytes_with_headers
-   * Byte 3: reserved
-   */
   const imageBytes = unwrapPossibleResourcePayload(payload);
 
   const mime = detectImageMime(imageBytes);
@@ -648,9 +682,8 @@ function decodeSteganography(imageData) {
   let writeIndex = 0;
 
   /**
-   * Canvas ImageData 永远是 RGBA。
-   * 但默认 use_alpha=false，因此需要按 RGB 重新展开，
-   * 跳过每个像素的 Alpha。
+   * Canvas 读取出的 ImageData 永远是 RGBA。
+   * 但 EasyToolkit 默认 use_alpha=false，所以这里按 RGB 展平。
    */
   for (let i = 0; i < rgba.length; i += 4) {
     flattened[writeIndex++] = rgba[i];
@@ -687,7 +720,7 @@ function decodeSteganography(imageData) {
   }
 
   /**
-   * Steganography 数据格式：
+   * 隐写数据格式：
    * [4-byte big-endian data length][data bytes][random noise...]
    */
   const dataLength =
@@ -699,7 +732,7 @@ function decodeSteganography(imageData) {
     ) >>> 0;
 
   if (dataLength <= 0 || dataLength > dataArea.length - 4) {
-    throw new Error("隐藏数据长度无效，请确认 PNG 未被压缩或修改。");
+    throw new Error("隐藏数据长度无效，请确认 PNG 未被压缩、缩放、裁剪或修改。");
   }
 
   return dataArea.slice(4, 4 + dataLength);
@@ -726,29 +759,21 @@ function unwrapPossibleResourcePayload(bytes) {
     return bytes;
   }
 
-  /**
-   * 如果本身就是图片 bytes，直接返回。
-   */
   if (detectImageMime(bytes) !== "application/octet-stream") {
     return bytes;
   }
 
   /**
-   * ResourceHeader 固定 4 字节：
-   * byte0 = format_number
-   * byte1 = compression_mode
-   * byte2 = serialization_format
-   * byte3 = reserved
+   * 兼容 EasyToolkit ResourceHeader：
+   * 固定 4 字节：
+   * Byte 0: Resource format number
+   * Byte 1: Compression mode，0=no_compression，1=zlib_compression
+   * Byte 2: Serialization format，0=none，1=bytes_with_headers
+   * Byte 3: reserved
    */
-  const formatNumber = bytes[0];
   const compressionMode = bytes[1];
   const serializationFormat = bytes[2];
 
-  /**
-   * 简单校验：
-   * compressionMode 目前已知 0 / 1
-   * serializationFormat 目前已知 0 / 1
-   */
   if (compressionMode !== 0 && compressionMode !== 1) {
     return bytes;
   }
@@ -758,15 +783,11 @@ function unwrapPossibleResourcePayload(bytes) {
   }
 
   if (compressionMode === 1) {
-    throw new Error("隐藏数据使用了 zlib 压缩，当前纯前端版本未启用 zlib 解压。");
+    throw new Error("隐藏数据使用了 zlib 压缩，当前网页未启用 zlib 解压。");
   }
 
   const body = bytes.slice(4);
 
-  /**
-   * serialization_format = 0:
-   * NONE，标准单段数据。
-   */
   if (serializationFormat === 0) {
     if (detectImageMime(body) !== "application/octet-stream") {
       return body;
@@ -775,12 +796,6 @@ function unwrapPossibleResourcePayload(bytes) {
     return bytes;
   }
 
-  /**
-   * serialization_format = 1:
-   * BYTES_WITH_HEADERS
-   * 格式：
-   * [4-byte size][data][4-byte size][data]...
-   */
   if (serializationFormat === 1) {
     const parts = splitBytesWithHeaders(body);
 
@@ -836,10 +851,6 @@ function detectImageMime(bytes) {
     return "application/octet-stream";
   }
 
-  /**
-   * PNG:
-   * 89 50 4E 47
-   */
   if (
     bytes[0] === 0x89 &&
     bytes[1] === 0x50 &&
@@ -849,10 +860,6 @@ function detectImageMime(bytes) {
     return "image/png";
   }
 
-  /**
-   * JPEG:
-   * FF D8
-   */
   if (
     bytes[0] === 0xff &&
     bytes[1] === 0xd8
@@ -860,10 +867,6 @@ function detectImageMime(bytes) {
     return "image/jpeg";
   }
 
-  /**
-   * WebP:
-   * RIFF....WEBP
-   */
   if (
     bytes.length >= 12 &&
     bytes[0] === 0x52 &&
@@ -878,10 +881,6 @@ function detectImageMime(bytes) {
     return "image/webp";
   }
 
-  /**
-   * GIF:
-   * GIF87a / GIF89a
-   */
   if (
     bytes[0] === 0x47 &&
     bytes[1] === 0x49 &&
